@@ -317,7 +317,6 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "review_percentage": round((review / total * 100) if total > 0 else 0, 1),
         "blocked_percentage": round((blocked / total * 100) if total > 0 else 0, 1)
     }
-
 # ====================== AI ASSISTANT (GROQ) ======================
 
 from pydantic import BaseModel
@@ -347,13 +346,7 @@ async def user_ai_chat(request: Request, data: ChatRequest):
         "messages": [
             {
                 "role": "system",
-                "content": (
-                    "You are Mulenga, a helpful and friendly AI assistant inside THE GUARDIAN system. "
-                    "You help users with questions about their account, transactions, "
-                    "fraud protection, Airtel Money, and general cybersecurity tips. "
-                    "Keep answers clear, short, and professional. "
-                    "You were built as part of Engineer Mulenga's final year project."
-                )
+                "content": "You are Mulenga, a helpful AI assistant inside THE GUARDIAN system. Help users with account, transactions, fraud protection and Airtel Money questions. Keep answers short and clear."
             },
             {
                 "role": "user",
