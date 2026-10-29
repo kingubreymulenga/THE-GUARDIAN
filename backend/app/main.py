@@ -318,6 +318,67 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "blocked_percentage": round((blocked / total * 100) if total > 0 else 0, 1)
     }
 
+# ====================== AI ASSISTANT (GROQ) ======================
+
+from pydantic import BaseModel
+import httpx
+import os
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.post("/api/v1/user/ai-chat")
+async def user_ai_chat(request: Request, data: ChatRequest):
+    current = get_current_normal_user(request)
+    if not current:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if not groq_api_key:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
+
+    headers = {
+        "Authorization": f"Bearer {groq_api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "llama-3.1-8b-instant",
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "You are Mulenga, a helpful and friendly AI assistant inside THE GUARDIAN system. "
+                    "You help users with questions about their account, transactions, "
+                    "fraud protection, Airtel Money, and general cybersecurity tips. "
+                    "Keep answers clear, short, and professional. "
+                    "You were built as part of Engineer Mulenga's final year project."
+                )
+            },
+            {
+                "role": "user",
+                "content": data.message
+            }
+        ],
+        "temperature": 0.7,
+        "max_tokens": 800
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30.0
+        )
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=500, detail="AI service is currently unavailable")
+
+    result = response.json()
+    answer = result["choices"][0]["message"]["content"]
+
+    return {"answer": answer}
 
 @app.get("/api/v1/dashboard/recent")
 def get_dashboard_recent_transactions(db: Session = Depends(get_db)):
