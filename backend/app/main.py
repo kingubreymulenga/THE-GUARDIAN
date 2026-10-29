@@ -6,9 +6,13 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 from passlib.context import CryptContext
+from pydantic import BaseModel, Field
+from typing import Optional
+from dotenv import load_dotenv
 import json
 import os
-from dotenv import load_dotenv
+import httpx
+import uuid
 
 load_dotenv()
 
@@ -45,7 +49,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SECRET_KEY", "guardian-secret-key-obby-mulenga-2026"),
     session_cookie="guardian_session",
-    max_age=60 * 60 * 24 * 14,   # 14 days
+    max_age=60 * 60 * 24 * 14,
     same_site="lax",
     https_only=False
 )
@@ -57,6 +61,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # -------------------------------------------------
 # Templates
 # -------------------------------------------------
@@ -68,17 +73,14 @@ templates = Jinja2Templates(directory="backend/app/templates")
 # =================================================
 
 def get_current_admin(request: Request):
-    """Return admin session if logged in"""
     return request.session.get("user")
 
 
 def get_current_normal_user(request: Request):
-    """Return normal user session if logged in"""
     return request.session.get("normal_user")
 
 
 def log_activity(db: Session, user_phone: str, action: str, details: str = None):
-    """Save activity log for admin monitoring"""
     log = ActivityLog(user_phone=user_phone, action=action, details=details)
     db.add(log)
     db.commit()
@@ -199,7 +201,6 @@ async def user_register(
 
     log_activity(db, username, "New Account Created", f"User {full_name} registered")
 
-    # Auto login after registration
     request.session["normal_user"] = {
         "id": new_user.id,
         "username": new_user.username,
@@ -210,7 +211,7 @@ async def user_register(
 
 
 # =================================================
-# USER DASHBOARD (Server-side rendered)
+# USER DASHBOARD
 # =================================================
 
 @app.get("/user/dashboard", response_class=HTMLResponse)
@@ -219,41 +220,9 @@ async def user_dashboard(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse(url="/login", status_code=302)
 
-    phone = user["phone"]
-
-    total = db.query(Transaction).filter(
-        (Transaction.sender_msisdn == phone) | (Transaction.receiver_msisdn == phone)
-    ).count()
-
-    allowed = db.query(Transaction).filter(
-        ((Transaction.sender_msisdn == phone) | (Transaction.receiver_msisdn == phone)),
-        Transaction.decision == "ALLOW"
-    ).count()
-
-    review = db.query(Transaction).filter(
-        ((Transaction.sender_msisdn == phone) | (Transaction.receiver_msisdn == phone)),
-        Transaction.decision == "REVIEW"
-    ).count()
-
-    blocked = db.query(Transaction).filter(
-        ((Transaction.sender_msisdn == phone) | (Transaction.receiver_msisdn == phone)),
-        Transaction.decision == "BLOCK"
-    ).count()
-
-    transactions = db.query(Transaction).filter(
-        (Transaction.sender_msisdn == phone) | (Transaction.receiver_msisdn == phone)
-    ).order_by(Transaction.created_at.desc()).limit(10).all()
-
     return templates.TemplateResponse("user_dashboard.html", {
         "request": request,
-        "user": user,
-        "stats": {
-            "total": total,
-            "allowed": allowed,
-            "review": review,
-            "blocked": blocked
-        },
-        "transactions": transactions
+        "user": user
     })
 
 
@@ -317,61 +286,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "review_percentage": round((review / total * 100) if total > 0 else 0, 1),
         "blocked_percentage": round((blocked / total * 100) if total > 0 else 0, 1)
     }
-# ====================== AI ASSISTANT (GROQ) ======================
 
-from pydantic import BaseModel
-import httpx
-import os
-
-class ChatRequest(BaseModel):
-    message: str
-
-@app.post("/api/v1/user/ai-chat")
-async def user_ai_chat(request: Request, data: ChatRequest):
-    current = get_current_normal_user(request)
-    if not current:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if not groq_api_key:
-        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
-
-    headers = {
-        "Authorization": f"Bearer {groq_api_key}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "model": "llama-3.1-8b-instant",
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are Mulenga, a helpful AI assistant inside THE GUARDIAN system. Help users with account, transactions, fraud protection and Airtel Money questions. Keep answers short and clear."
-            },
-            {
-                "role": "user",
-                "content": data.message
-            }
-        ],
-        "temperature": 0.7,
-        "max_tokens": 800
-    }
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=30.0
-        )
-
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="AI service is currently unavailable")
-
-    result = response.json()
-    answer = result["choices"][0]["message"]["content"]
-
-    return {"answer": answer}
 
 @app.get("/api/v1/dashboard/recent")
 def get_dashboard_recent_transactions(db: Session = Depends(get_db)):
@@ -440,7 +355,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 
 
 # =================================================
-# USER API ROUTES (FIXED AUTHENTICATION)
+# USER API ROUTES
 # =================================================
 
 @app.get("/api/v1/user/profile")
@@ -457,6 +372,7 @@ def get_user_profile(request: Request, db: Session = Depends(get_db)):
         "id": user.id,
         "username": user.username,
         "full_name": user.full_name,
+,
         "phone": user.phone,
         "email": user.email or "",
         "balance": user.balance or 0.0,
@@ -605,11 +521,65 @@ def get_user_notifications(request: Request, db: Session = Depends(get_db)):
         })
     return result
 
- #AIRTEL MONEY + WALLET FEATURES
 
-from pydantic import BaseModel, Field
-from typing import Optional
-import uuid
+# =================================================
+# AI ASSISTANT (GROQ)
+# =================================================
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.post("/api/v1/user/ai-chat")
+async def user_ai_chat(request: Request, data: ChatRequest):
+    current = get_current_normal_user(request)
+    if not current:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if not groq_api_key:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
+
+    headers = {
+        "Authorization": f"Bearer {groq_api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "llama-3.1-8b-instant",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are Mulenga, a helpful AI assistant inside THE GUARDIAN system. Help users with account, transactions, fraud protection and Airtel Money questions. Keep answers short and clear."
+            },
+            {
+                "role": "user",
+                "content": data.message
+            }
+        ],
+        "temperature": 0.7,
+        "max_tokens": 800
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30.0
+        )
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=500, detail="AI service is currently unavailable")
+
+    result = response.json()
+    answer = result["choices"][0]["message"]["content"]
+
+    return {"answer": answer}
+
+
+# =================================================
+# AIRTEL MONEY + WALLET FEATURES
+# =================================================
 
 class AirtelTransferRequest(BaseModel):
     recipient_phone: str = Field(..., min_length=9, max_length=15)
@@ -627,7 +597,6 @@ def airtel_money_transfer(
     data: AirtelTransferRequest,
     db: Session = Depends(get_db)
 ):
-    """Simulate Airtel Money transfer"""
     current = get_current_normal_user(request)
     if not current:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -642,20 +611,16 @@ def airtel_money_transfer(
     if sender.balance < data.amount:
         raise HTTPException(status_code=400, detail="Insufficient balance")
 
-    # Generate clean transaction ID
     txn_id = f"AIRTEL-{datetime.utcnow().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
 
-    # Deduct from sender
     sender.balance -= data.amount
 
-    # Credit receiver if they exist
     receiver = db.query(User).filter(User.phone == data.recipient_phone).first()
     if receiver:
         if receiver.balance is None:
             receiver.balance = 0.0
         receiver.balance += data.amount
 
-    # Create transaction (Admin will see this)
     new_tx = Transaction(
         transaction_id=txn_id,
         amount=data.amount,
@@ -699,7 +664,6 @@ def topup_balance(
     data: TopUpRequest,
     db: Session = Depends(get_db)
 ):
-    """Simulate Airtel Money top-up / deposit"""
     current = get_current_normal_user(request)
     if not current:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -715,7 +679,6 @@ def topup_balance(
 
     txn_id = f"TOPUP-{datetime.utcnow().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
 
-    # Record the top-up as a transaction
     new_tx = Transaction(
         transaction_id=txn_id,
         amount=data.amount,
