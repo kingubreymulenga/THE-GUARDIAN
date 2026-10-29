@@ -111,7 +111,7 @@ async def login(
 
     # Normal user login
     user = db.query(User).filter(User.username == username).first()
-    if user and pwd_context.verify(password, user.password):
+    if user and pwd_context.verify(password[:72], user.password):
         user.last_login = datetime.utcnow()
         db.commit()
 
