@@ -7,6 +7,10 @@ from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 from passlib.context import CryptContext
 import json
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from backend.app.core.config import settings
 from backend.app.models.transaction import TransactionRequest, FraudResponse
@@ -39,7 +43,11 @@ app = FastAPI(
 # -------------------------------------------------
 app.add_middleware(
     SessionMiddleware,
-    secret_key="guardian-secret-key-obby-mulenga-2026"
+    secret_key=os.getenv("SECRET_KEY", "guardian-secret-key-obby-mulenga-2026"),
+    session_cookie="guardian_session",
+    max_age=60 * 60 * 24 * 14,   # 14 days
+    same_site="lax",
+    https_only=False
 )
 
 app.add_middleware(
@@ -49,7 +57,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # -------------------------------------------------
 # Templates
 # -------------------------------------------------
