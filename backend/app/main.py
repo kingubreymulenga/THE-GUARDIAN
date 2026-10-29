@@ -536,7 +536,7 @@ async def user_ai_chat(request: Request, data: ChatRequest):
 
     groq_api_key = os.getenv("GROQ_API_KEY")
     if not groq_api_key:
-        raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
+        return {"answer": "AI is not configured. Please contact the administrator."}
 
     headers = {
         "Authorization": f"Bearer {groq_api_key}",
@@ -544,7 +544,7 @@ async def user_ai_chat(request: Request, data: ChatRequest):
     }
 
     payload = {
-        "model": "llama-3.1-8b-instant",
+        "model": "llama-3.3-70b-versatile",
         "messages": [
             {
                 "role": "system",
@@ -556,24 +556,27 @@ async def user_ai_chat(request: Request, data: ChatRequest):
             }
         ],
         "temperature": 0.7,
-        "max_tokens": 800
+        "max_tokens": 600
     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=30.0
-        )
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=30.0
+            )
 
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="AI service is currently unavailable")
+        if response.status_code != 200:
+            return {"answer": "Sorry, I'm having trouble connecting right now. Please try again later."}
 
-    result = response.json()
-    answer = result["choices"][0]["message"]["content"]
+        result = response.json()
+        answer = result["choices"][0]["message"]["content"]
+        return {"answer": answer}
 
-    return {"answer": answer}
+    except Exception as e:
+        return {"answer": "Sorry, something went wrong. Please try again."}
 
 
 # =================================================
