@@ -522,7 +522,7 @@ def get_user_notifications(request: Request, db: Session = Depends(get_db)):
 
 
 # =================================================
-# AI ASSISTANT (GROQ)
+# LOCAL AI ASSISTANT (No API Key Needed)
 # =================================================
 
 class ChatRequest(BaseModel):
@@ -534,50 +534,40 @@ async def user_ai_chat(request: Request, data: ChatRequest):
     if not current:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    groq_api_key = os.getenv("GROQ_API_KEY")
-    if not groq_api_key:
-        return {"answer": "AI is not configured. Please contact the administrator."}
+    message = data.message.lower().strip()
 
-    headers = {
-        "Authorization": f"Bearer {groq_api_key}",
-        "Content-Type": "application/json"
-    }
+    # Simple intelligent responses
+    if any(word in message for word in ["hello", "hi", "hey", "mwaiseni", "takulandilani"]):
+        answer = "Mwaiseni! Takulandilani. I am Mulenga, your AI assistant in THE GUARDIAN system. How can I help you today?"
 
-    payload = {
-        "model": "llama-3.3-70b-versatile",
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are Mulenga, a helpful AI assistant inside THE GUARDIAN system. Help users with account, transactions, fraud protection and Airtel Money questions. Keep answers short and clear."
-            },
-            {
-                "role": "user",
-                "content": data.message
-            }
-        ],
-        "temperature": 0.7,
-        "max_tokens": 600
-    }
+    elif any(word in message for word in ["balance", "money", "how much"]):
+        answer = "You can check your current Airtel Money balance on the Home page or in the Wallet section of your dashboard."
 
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=30.0
-            )
+    elif any(word in message for word in ["fraud", "scam", "suspicious", "block"]):
+        answer = "THE GUARDIAN uses real-time fraud detection. If you see any suspicious transaction, go to 'Report Fraud' and submit the Transaction ID. The admin will review it immediately."
 
-        if response.status_code != 200:
-            return {"answer": "Sorry, I'm having trouble connecting right now. Please try again later."}
+    elif any(word in message for word in ["send money", "transfer", "airtel"]):
+        answer = "To send money, go to the Wallet section, choose 'Send Money', enter the recipient's phone number and amount, then confirm."
 
-        result = response.json()
-        answer = result["choices"][0]["message"]["content"]
-        return {"answer": answer}
+    elif any(word in message for word in ["top up", "topup", "deposit"]):
+        answer = "To top up your wallet, go to the Wallet section and select 'Top Up'. Enter the amount and confirm."
 
-    except Exception as e:
-        return {"answer": "Sorry, something went wrong. Please try again."}
+    elif any(word in message for word in ["transaction", "history", "statement"]):
+        answer = "You can view all your transactions in the History section of the dashboard."
 
+    elif any(word in message for word in ["who are you", "your name", "mulenga"]):
+        answer = "I am Mulenga, the AI assistant of THE GUARDIAN. I was created as part of Engineer Aubrey Mulenga's final year project to help protect mobile money users in Zambia."
+
+    elif any(word in message for word in ["help", "assist", "support"]):
+        answer = "I can help you with: checking balance, sending money, reporting fraud, viewing transactions, and understanding how THE GUARDIAN protects you."
+
+    elif any(word in message for word in ["thank", "thanks"]):
+        answer = "You're welcome! Stay safe with THE GUARDIAN."
+
+    else:
+        answer = "I'm still learning. You can ask me about your balance, how to send money, report fraud, or how THE GUARDIAN protects your transactions."
+
+    return {"answer": answer}
 
 # =================================================
 # AIRTEL MONEY + WALLET FEATURES
