@@ -2,292 +2,317 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>THE GUARDIAN // User Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
-        
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
             background: #0b0f19;
             color: #e2e8f0;
-        }
-        .mono { font-family: 'Share Tech Mono', monospace; }
-        
-        .sidebar {
-            width: 260px;
-            background: #0a0e17;
-            border-right: 1px solid rgba(0, 255, 159, 0.);
+            margin: 0;
+            padding-bottom: 80px;
         }
         .card {
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(0, 255, 159, 0.12);
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 16px;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #0f172a;
+            border-top: 1px solid #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 50;
         }
         .nav-item {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            border-radius: 8px;
-            color: #94a3b8;
-            cursor: pointer;
-            transition: 0.2s;
+            font-size: 11px;
+            color: #64748b;
+            gap: 4px;
         }
-        .nav-item:hover, .nav-item.active {
-            background: rgba(0, 255, 159, 0.1);
+        .nav-item.active {
             color: #00ff9f;
         }
         .section { display: none; }
         .section.active { display: block; }
-        
-        .btn-primary {
-            background: rgba(0, 255, 159, 0.15);
-            border: 1px solid rgba(0, 255, 159, 0.4);
-            color: #00ff9f;
+        .btn-action {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            font-size: 13px;
+            transition: 0.2s;
         }
-        .btn-primary:hover {
-            background: rgba(0, 255, 159, 0.25);
-        }
-        .btn-danger {
-            background: rgba(255, 42, 109, 0.15);
-            border: 1px solid rgba(255, 42, 109, 0.4);
-            color: #ff2a6d;
+        .btn-action:active {
+            transform: scale(0.97);
         }
     </style>
 </head>
-<body class="min-h-screen flex">
+<body>
 
-    <!-- Sidebar -->
-    <aside class="sidebar hidden md:flex flex-col p-5 fixed h-full z-20">
-        <div class="flex items-center gap-3 mb-10">
-            <div class="w-11 h-11 rounded-lg bg-green-500/10 border border-green-500/40 flex items-center justify-center">
-                <i class="fas fa-shield-alt text-green-400 text-xl"></i>
-            </div>
+    <!-- Header -->
+    <div class="px-5 pt-6 pb-4">
+        <div class="flex justify-between items-center">
             <div>
-                <h1 class="font-bold text-green-400 mono text-lg">THE GUARDIAN</h1>
-                <p class="text-xs text-gray-500">User Portal</p>
+                <p class="text-gray-400 text-sm">Welcome back</p>
+                <h1 class="text-xl font-bold text-white" id="userFullName">User</h1>
+            </div>
+            <div class="flex items-center gap-2 bg-green-500/10 border border-green-500/30 px-3 py-1.5 rounded-full">
+                <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                <span class="text-green-400 text-xs font-medium">PROTECTED</span>
             </div>
         </div>
+    </div>
 
-        <nav class="space-y-1 flex-1">
-            <div class="nav-item active" onclick="showSection('overview', this)">
-                <i class="fas fa-home w-5"></i> Overview
-            </div>
-            <div class="nav-item" onclick="showSection('transactions', this)">
-                <i class="fas fa-exchange-alt w-5"></i> My Transactions
-            </div>
-            <div class="nav-item" onclick="showSection('profile', this)">
-                <i class="fas fa-user w-5"></i> My Profile
-            </div>
-            <div class="nav-item" onclick="showSection('notifications', this)">
-                <i class="fas fa-bell w-5"></i> Notifications
-            </div>
-            <div class="nav-item" onclick="showSection('report', this)">
-                <i class="fas fa-flag w-5"></i> Report Activity
-            </div>
-            <div class="nav-item" onclick="showSection('wallet', this)">
-                <i class="fas fa-mobile-alt w-5"></i> Airtel Money
-            </div>
-        </nav>
+    <!-- ==================== HOME / OVERVIEW ==================== -->
+    <div id="section-home" class="section active px-5">
 
-        <div class="mt-auto pt-6 border-t border-green-900/30">
-            <a href="/logout" class="nav-item text-red-400 hover:bg-red-500/10">
-                <i class="fas fa-sign-out-alt w-5"></i> Logout
-            </a>
+        <!-- Balance Card -->
+        <div class="card p-5 mb-5">
+            <p class="text-gray-400 text-sm mb-1">Account Balance</p>
+            <h2 class="text-3xl font-bold text-green-400" id="balanceDisplay">ZMW 0.00</h2>
+            <p class="text-xs text-gray-500 mt-1">Airtel Money • Zambia</p>
         </div>
-    </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 md:ml-[260px] p-6">
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-3 mb-6" id="statsContainer">
+            <!-- loaded by JS -->
+        </div>
 
-        <!-- Header -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-            <div>
-                <h2 class="text-2xl font-bold">
-                    Welcome back, <span class="text-green-400" id="userFullName">User</span>
-                </h2>
-                <p class="text-gray-500 text-sm mt-1 mono">Protected by THE GUARDIAN • Zambia</p>
-            </div>
-            <div class="flex items-center gap-3">
-                <button onclick="loadAll()" class="btn-primary px-4 py-2 rounded-lg text-sm mono">
-                    <i class="fas fa-sync-alt mr-1"></i> REFRESH
+        <!-- Quick Security Actions -->
+        <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-300 mb-3">QUICK SECURITY ACTIONS</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="freezeAccount()" class="btn-action">
+                    <i class="fas fa-lock text-pink-400 text-lg mb-2"></i>
+                    <p class="text-pink-300">Freeze Account</p>
                 </button>
-                <div class="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30">
-                    <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                    <span class="text-green-400 mono text-xs">PROTECTED</span>
-                </div>
+                <button onclick="showSection('report')" class="btn-action">
+                    <i class="fas fa-flag text-cyan-400 text-lg mb-2"></i>
+                    <p class="text-cyan-300">Report Fraud</p>
+                </button>
+                <button onclick="checkLogins()" class="btn-action">
+                    <i class="fas fa-laptop text-blue-400 text-lg mb-2"></i>
+                    <p class="text-blue-300">Check Logins</p>
+                </button>
+                <button onclick="downloadStatement()" class="btn-action">
+                    <i class="fas fa-file-download text-yellow-400 text-lg mb-2"></i>
+                    <p class="text-yellow-300">Statement</p>
+                </button>
             </div>
         </div>
 
-        <!-- ==================== OVERVIEW ==================== -->
-        <div id="section-overview" class="section active">
-            <!-- Stats -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="statsContainer">
-                <!-- Loaded by JS -->
-            </div>
-
-            <!-- Recent Transactions + Notifications -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 card rounded-xl p-5">
-                    <h3 class="text-sm text-cyan-400 mono mb-4">
-                        <i class="fas fa-history mr-2"></i>RECENT TRANSACTIONS
-                    </h3>
-                    <div class="overflow-x-auto max-h-80 overflow-y-auto">
-                        <table class="w-full text-sm">
-                            <thead class="text-gray-500 border-b border-green-900/30 text-xs">
-                                <tr>
-                                    <th class="text-left py-3">TXN ID</th>
-                                    <th class="text-left py-3">AMOUNT</th>
-                                    <th class="text-left py-3">DECISION</th>
-                                    <th class="text-left py-3">TIME</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recentTransactions"></tbody>
-                        </table>
-                    </div>
+        <!-- Security Score -->
+        <div class="card p-4 mb-6">
+            <p class="text-xs text-gray-400 mb-2">ACCOUNT SECURITY SCORE</p>
+            <div class="flex items-center gap-3">
+                <div class="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div id="securityBar" class="h-full bg-green-400 rounded-full" style="width: 40%"></div>
                 </div>
-
-                <div class="card rounded-xl p-5">
-                    <h3 class="text-sm text-yellow-400 mono mb-4">
-                        <i class="fas fa-bell mr-2"></i>LATEST NOTIFICATIONS
-                    </h3>
-                    <div id="notificationsPreview" class="space-y-3 max-h-80 overflow-y-auto text-sm">
-                        <!-- Loaded by JS -->
-                    </div>
-                </div>
+                <span class="text-sm font-medium" id="securityText">Fair</span>
             </div>
+            <p class="text-xs text-gray-500 mt-2">Based on your recent activity</p>
         </div>
 
-        <!-- ==================== TRANSACTIONS ==================== -->
-        <div id="section-transactions" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-cyan-400 mono mb-4">
-                    <i class="fas fa-exchange-alt mr-2"></i>ALL MY TRANSACTIONS
+        <!-- Latest Notifications -->
+        <div class="card p-4 mb-6">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-semibold text-yellow-400">
+                    <i class="fas fa-bell mr-1"></i> LATEST NOTIFICATIONS
                 </h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="text-gray-500 border-b border-green-900/30 text-xs">
-                            <tr>
-                                <th class="text-left py-3">TXN ID</th>
-                                <th class="text-left py-3">AMOUNT</th>
-                                <th class="text-left py-3">SENDER</th>
-                                <th class="text-left py-3">RECEIVER</th>
-                                <th class="text-left py-3">RISK</th>
-                                <th class="text-left py-3">DECISION</th>
-                                <th class="text-left py-3">TIME</th>
-                            </tr>
-                        </thead>
-                        <tbody id="allTransactions"></tbody>
-                    </table>
-                </div>
+            </div>
+            <div id="notificationsPreview" class="space-y-3 text-sm">
+                <p class="text-gray-500">Loading...</p>
             </div>
         </div>
+    </div>
 
-        <!-- ==================== PROFILE ==================== -->
-        <div id="section-profile" class="section">
-            <div class="card rounded-xl p-6 max-w-2xl">
-                <h3 class="text-sm text-green-400 mono mb-6">
-                    <i class="fas fa-user mr-2"></i>MY PROFILE
-                </h3>
-                
-                <div class="space-y-4" id="profileView">
-                    <!-- Loaded by JS -->
-                </div>
-
-                <div class="mt-6 pt-6 border-t border-green-900/30">
-                    <h4 class="text-sm text-gray-400 mb-4">Edit Profile</h4>
-                    <form id="profileForm" class="space-y-4">
-                        <div>
-                            <label class="text-xs text-gray-500">Full Name</label>
-                            <input type="text" id="editFullName" class="w-full mt-1 px-4 py-2.5 rounded-lg bg-black/40 border border-green-900/40 text-white focus:outline-none focus:border-green-500">
-                        </div>
-                        <div>
-                            <label class="text-xs text-gray-500">Email</label>
-                            <input type="email" id="editEmail" class="w-full mt-1 px-4 py-2.5 rounded-lg bg-black/40 border border-green-900/40 text-white focus:outline-none focus:border-green-500">
-                        </div>
-                        <button type="submit" class="btn-primary px-6 py-2.5 rounded-lg text-sm">
-                            <i class="fas fa-save mr-2"></i>Save Changes
-                        </button>
-                    </form>
-                </div>
+    <!-- ==================== TRANSACTIONS ==================== -->
+    <div id="section-transactions" class="section px-5">
+        <h2 class="text-lg font-bold mb-4">My Transactions</h2>
+        <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-gray-500 border-b border-gray-700 text-xs">
+                        <tr>
+                            <th class="text-left p-3">Amount</th>
+                            <th class="text-left p-3">Decision</th>
+                            <th class="text-left p-3">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allTransactions"></tbody>
+                </table>
             </div>
         </div>
+    </div>
 
-        <!-- ==================== NOTIFICATIONS ==================== -->
-        <div id="section-notifications" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-yellow-400 mono mb-4">
-                    <i class="fas fa-bell mr-2"></i>ALL NOTIFICATIONS
-                </h3>
-                <div id="allNotifications" class="space-y-3 max-h-[500px] overflow-y-auto text-sm">
-                    <!-- Loaded by JS -->
+    <!-- ==================== WALLET ==================== -->
+    <div id="section-wallet" class="section px-5">
+        <h2 class="text-lg font-bold mb-4">Airtel Money Wallet</h2>
+
+        <div class="card p-5 mb-5 text-center">
+            <p class="text-gray-400 text-sm">Available Balance</p>
+            <h2 class="text-3xl font-bold text-green-400 my-2" id="walletBalance">K0.00</h2>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-2 mb-5">
+            <button onclick="showWalletTab('send')" id="tab-send" class="flex-1 py-2.5 rounded-lg bg-green-500 text-black font-medium text-sm">Send Money</button>
+            <button onclick="showWalletTab('topup')" id="tab-topup" class="flex-1 py-2.5 rounded-lg bg-gray-800 text-gray-300 text-sm">Top Up</button>
+        </div>
+
+        <!-- Send Money -->
+        <div id="wallet-send" class="card p-5">
+            <form id="transferForm" class="space-y-4">
+                <div>
+                    <label class="text-xs text-gray-400">Recipient Phone</label>
+                    <input type="text" id="recipientPhone" placeholder="0977 123 456" required
+                        class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white focus:outline-none focus:border-green-500">
                 </div>
-            </div>
-        </div>
-
-        <!-- ==================== REPORT ==================== -->
-        <div id="section-report" class="section">
-            <div class="card rounded-xl p-6 max-w-xl">
-                <h3 class="text-sm text-red-400 mono mb-6">
-                    <i class="fas fa-flag mr-2"></i>REPORT SUSPICIOUS ACTIVITY
-                </h3>
-                <form id="reportForm" class="space-y-4">
-                    <div>
-                        <label class="text-xs text-gray-500">Transaction ID</label>
-                        <input type="text" id="reportTxnId" required placeholder="e.g. TXN-2026-0001847"
-                            class="w-full mt-1 px-4 py-2.5 rounded-lg bg-black/40 border border-green-900/40 text-white focus:outline-none focus:border-green-500">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500">Reason</label>
-                        <textarea id="reportReason" required rows="4" placeholder="Describe why this transaction is suspicious..."
-                            class="w-full mt-1 px-4 py-2.5 rounded-lg bg-black/40 border border-green-900/40 text-white focus:outline-none focus:border-green-500"></textarea>
-                    </div>
-                    <button type="submit" class="btn-danger px-6 py-2.5 rounded-lg text-sm">
-                        <i class="fas fa-paper-plane mr-2"></i>Submit Report
-                    </button>
-                </form>
-                <p id="reportMessage" class="mt-4 text-sm"></p>
-            </div>
-        </div>
-
-        <!-- ==================== AIRTEL MONEY (Coming Next) ==================== -->
-        <div id="section-airtel" class="section">
-            <div class="card rounded-xl p-6 max-w-2xl">
-                <h3 class="text-sm text-cyan-400 mono mb-4">
-                    <i class="fas fa-mobile-alt mr-2"></i>AIRTEL MONEY CONNECTION
-                </h3>
-                <p class="text-gray-400 mb-6">
-                    Connect your Airtel Money account so THE GUARDIAN can protect your mobile money transactions.
-                </p>
-                <div class="p-6 rounded-xl bg-black/30 border border-dashed border-green-900/40 text-center">
-                    <i class="fas fa-link text-4xl text-green-500 mb-4"></i>
-                    <p class="text-gray-400 mb-4">Airtel Money simulation will be activated in the next step.</p>
-                    <button class="btn-primary px-6 py-2.5 rounded-lg text-sm opacity-50 cursor-not-allowed">
-                        Connect Airtel Money (Coming Next)
-                    </button>
+                <div>
+                    <label class="text-xs text-gray-400">Amount (ZMW)</label>
+                    <input type="number" id="transferAmount" placeholder="50.00" min="1" step="0.01" required
+                        class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white focus:outline-none focus:border-green-500">
                 </div>
-            </div>
+                <div>
+                    <label class="text-xs text-gray-400">Note (optional)</label>
+                    <input type="text" id="transferNote" placeholder="Payment for..."
+                        class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white focus:outline-none focus:border-green-500">
+                </div>
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-green-500 text-black font-semibold">
+                    Send Money
+                </button>
+            </form>
+            <div id="transferResult" class="mt-4 text-sm hidden"></div>
         </div>
 
-        <div class="text-center text-gray-600 text-xs mt-12 mono">
-            THE GUARDIAN • USER PORTAL<br>
-            <span class="text-green-500">Secured by Engineer Mulenga</span>
+        <!-- Top Up -->
+        <div id="wallet-topup" class="card p-5 hidden">
+            <form id="topupForm" class="space-y-4">
+                <div>
+                    <label class="text-xs text-gray-400">Amount to Top Up (ZMW)</label>
+                    <input type="number" id="topupAmount" placeholder="100.00" min="10" required
+                        class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white focus:outline-none focus:border-green-500">
+                </div>
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-green-500 text-black font-semibold">
+                    Top Up Now
+                </button>
+            </form>
+            <div id="topupResult" class="mt-4 text-sm hidden"></div>
         </div>
-    </main>
+    </div>
+
+    <!-- ==================== REPORT ==================== -->
+    <div id="section-report" class="section px-5">
+        <h2 class="text-lg font-bold mb-4 text-red-400">Report Fraud</h2>
+        <div class="card p-5">
+            <form id="reportForm" class="space-y-4">
+                <div>
+                    <label class="text-xs text-gray-400">Transaction ID</label>
+                    <input type="text" id="reportTxnId" required placeholder="e.g. TXN-2026-0001847"
+                        class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white focus:outline-none focus:border-red-500">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400">Reason</label>
+                    <textarea id="reportReason" required rows="4" placeholder="Describe the suspicious activity..."
+                        class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white focus:outline-none focus:border-red-500"></textarea>
+                </div>
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-red-500/20 border border-red-500 text-red-400 font-semibold">
+                    Submit Report
+                </button>
+            </form>
+            <p id="reportMessage" class="mt-4 text-sm"></p>
+        </div>
+    </div>
+
+    <!-- ==================== MORE / PROFILE ==================== -->
+    <div id="section-more" class="section px-5">
+        <h2 class="text-lg font-bold mb-4">More</h2>
+
+        <div class="card p-5 mb-5" id="profileView">
+            <!-- loaded by JS -->
+        </div>
+
+        <div class="card p-5">
+            <h3 class="text-sm text-gray-400 mb-4">Edit Profile</h3>
+            <form id="profileForm" class="space-y-4">
+                <div>
+                    <label class="text-xs text-gray-400">Full Name</label>
+                    <input type="text" id="editFullName"
+                        class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400">Email</label>
+                    <input type="email" id="editEmail"
+                        class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white">
+                </div>
+                <button type="submit" class="w-full py-3 rounded-xl bg-green-500/20 border border-green-500 text-green-400 font-medium">
+                    Save Changes
+                </button>
+            </form>
+        </div>
+
+        <a href="/logout" class="block mt-6 text-center text-red-400 py-3">
+            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+        </a>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="showSection('home', this)">
+            <i class="fas fa-home text-lg"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-item" onclick="showSection('transactions', this)">
+            <i class="fas fa-exchange-alt text-lg"></i>
+            <span>Transactions</span>
+        </div>
+        <div class="nav-item" onclick="showSection('wallet', this)">
+            <i class="fas fa-wallet text-lg"></i>
+            <span>Wallet</span>
+        </div>
+        <div class="nav-item" onclick="showSection('more', this)">
+            <i class="fas fa-bars text-lg"></i>
+            <span>More</span>
+        </div>
+    </div>
 
     <script>
-        // ========== SECTION SWITCHING ==========
-        function showSection(name, element) {
+        function showSection(name, el) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('section-' + name).classList.add('active');
-            
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            if (element) element.classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            if (el) el.classList.add('active');
         }
 
-        // ========== LOAD ALL DATA ==========
+        function showWalletTab(tab) {
+            document.getElementById('wallet-send').classList.add('hidden');
+            document.getElementById('wallet-topup').classList.add('hidden');
+            document.getElementById('tab-send').className = 'flex-1 py-2.5 rounded-lg bg-gray-800 text-gray-300 text-sm';
+            document.getElementById('tab-topup').className = 'flex-1 py-2.5 rounded-lg bg-gray-800 text-gray-300 text-sm';
+
+            if (tab === 'send') {
+                document.getElementById('wallet-send').classList.remove('hidden');
+                document.getElementById('tab-send').className = 'flex-1 py-2.5 rounded-lg bg-green-500 text-black font-medium text-sm';
+            } else {
+                document.getElementById('wallet-topup').classList.remove('hidden');
+                document.getElementById('tab-topup').className = 'flex-1 py-2.5 rounded-lg bg-green-500 text-black font-medium text-sm';
+            }
+        }
+
+        // ========== LOAD DATA ==========
         async function loadAll() {
             try {
                 const [profileRes, statsRes, txRes, notifRes] = await Promise.all([
@@ -302,141 +327,104 @@
                 const transactions = await txRes.json();
                 const notifications = await notifRes.json();
 
-                // Header name
+                // Name & Balance
                 document.getElementById('userFullName').textContent = profile.full_name || profile.username;
+                document.getElementById('balanceDisplay').textContent = 'ZMW ' + Number(stats.balance || 0).toLocaleString();
+                document.getElementById('walletBalance').textContent = 'K' + Number(stats.balance || 0).toFixed(2);
 
                 // Stats
                 document.getElementById('statsContainer').innerHTML = `
-                    <div class="card rounded-xl p-5">
-                        <p class="text-gray-500 text-xs mono mb-1">ACCOUNT BALANCE</p>
-                        <h3 class="text-2xl font-bold text-green-400 mono">ZMW ${Number(stats.balance).toLocaleString()}</h3>
+                    <div class="card p-3 text-center">
+                        <p class="text-xs text-gray-500">Total</p>
+                        <p class="text-lg font-bold text-cyan-400">${stats.total_transactions || 0}</p>
                     </div>
-                    <div class="card rounded-xl p-5">
-                        <p class="text-gray-500 text-xs mono mb-1">TOTAL TRANSACTIONS</p>
-                        <h3 class="text-2xl font-bold text-cyan-400 mono">${stats.total_transactions || 0}</h3>
+                    <div class="card p-3 text-center">
+                        <p class="text-xs text-gray-500">Allowed</p>
+                        <p class="text-lg font-bold text-green-400">${stats.allowed || 0}</p>
                     </div>
-                    <div class="card rounded-xl p-5">
-                        <p class="text-gray-500 text-xs mono mb-1">ALLOWED</p>
-                        <h3 class="text-2xl font-bold text-green-400 mono">${stats.allowed || 0}</h3>
-                    </div>
-                    <div class="card rounded-xl p-5">
-                        <p class="text-gray-500 text-xs mono mb-1">BLOCKED / REVIEW</p>
-                        <h3 class="text-2xl font-bold text-red-400 mono">${(stats.blocked || 0) + (stats.review || 0)}</h3>
+                    <div class="card p-3 text-center">
+                        <p class="text-xs text-gray-500">Blocked</p>
+                        <p class="text-lg font-bold text-red-400">${(stats.blocked || 0) + (stats.review || 0)}</p>
                     </div>
                 `;
 
-                // Transactions
-                renderTransactions(transactions);
+                // Security Score
+                const total = stats.total_transactions || 0;
+                let score = 40;
+                if (total > 5) score = 65;
+                if (total > 15) score = 85;
+                if ((stats.blocked || 0) > 2) score = 30;
+                document.getElementById('securityBar').style.width = score + '%';
+                document.getElementById('securityText').textContent = score >= 70 ? 'Good' : score >= 50 ? 'Fair' : 'Low';
 
-                // Profile
-                renderProfile(profile);
+                // Transactions
+                const tbody = document.getElementById('allTransactions');
+                if (!transactions.length) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-gray-500">No transactions yet</td></tr>`;
+                } else {
+                    tbody.innerHTML = transactions.map(tx => `
+                        <tr class="border-b border-gray-800">
+                            <td class="p-3">ZMW ${Number(tx.amount).toLocaleString()}</td>
+                            <td class="p-3">
+                                <span class="text-xs px-2 py-0.5 rounded ${
+                                    tx.decision === 'BLOCK' ? 'bg-red-500/20 text-red-400' :
+                                    tx.decision === 'REVIEW' ? 'bg-yellow-500/20 text-yellow-400' :
+                                    'bg-green-500/20 text-green-400'
+                                }">${tx.decision}</span>
+                            </td>
+                            <td class="p-3 text-gray-500 text-xs">${tx.time}</td>
+                        </tr>
+                    `).join('');
+                }
 
                 // Notifications
-                renderNotifications(notifications);
+                const notifHtml = notifications.length ? notifications.slice(0,5).map(n => `
+                    <div class="flex justify-between">
+                        <span class="text-green-400">${n.action}</span>
+                        <span class="text-gray-500 text-xs">${n.time}</span>
+                    </div>
+                `).join('') : `<p class="text-gray-500">No notifications yet</p>`;
+                document.getElementById('notificationsPreview').innerHTML = notifHtml;
+
+                // Profile
+                document.getElementById('profileView').innerHTML = `
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-400">Name</span><span>${profile.full_name}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Phone</span><span class="text-cyan-300">${profile.phone}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Email</span><span>${profile.email || 'Not set'}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Last Login</span><span>${profile.last_login}</span></div>
+                    </div>
+                `;
+                document.getElementById('editFullName').value = profile.full_name || '';
+                document.getElementById('editEmail').value = profile.email || '';
 
             } catch (err) {
-                console.error("Error loading data:", err);
+                console.error(err);
             }
         }
 
-        function renderTransactions(transactions) {
-            const recentBody = document.getElementById('recentTransactions');
-            const allBody = document.getElementById('allTransactions');
+        // ========== QUICK SECURITY ACTIONS ==========
+        async function freezeAccount() {
+            if (!confirm('Are you sure you want to freeze your account? You will not be able to make transactions until an admin reactivates it.')) return;
 
-            if (!transactions || transactions.length === 0) {
-                recentBody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-gray-500">No transactions yet</td></tr>`;
-                allBody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-gray-500">No transactions yet</td></tr>`;
-                return;
+            try {
+                const res = await fetch('/api/v1/user/freeze', { method: 'POST' });
+                if (res.ok) {
+                    alert('Account frozen successfully. Contact admin to reactivate.');
+                } else {
+                    alert('Failed to freeze account. Feature may not be fully connected yet.');
+                }
+            } catch {
+                alert('Request failed. Please try again later.');
             }
-
-            const recentHtml = transactions.slice(0, 8).map(tx => `
-                <tr class="border-b border-green-900/20">
-                    <td class="py-3 text-cyan-300 text-xs">${tx.transaction_id}</td>
-                    <td class="py-3">ZMW ${Number(tx.amount).toLocaleString()}</td>
-                    <td class="py-3">
-                        <span class="px-2 py-0.5 rounded text-xs ${
-                            tx.decision === 'BLOCK' ? 'bg-red-500/15 text-red-400' :
-                            tx.decision === 'REVIEW' ? 'bg-yellow-500/15 text-yellow-400' :
-                            'bg-green-500/15 text-green-400'
-                        }">${tx.decision}</span>
-                    </td>
-                    <td class="py-3 text-gray-500 text-xs">${tx.time}</td>
-                </tr>
-            `).join('');
-
-            const allHtml = transactions.map(tx => `
-                <tr class="border-b border-green-900/20">
-                    <td class="py-3 text-cyan-300 text-xs">${tx.transaction_id}</td>
-                    <td class="py-3">ZMW ${Number(tx.amount).toLocaleString()}</td>
-                    <td class="py-3 text-xs">${tx.sender}</td>
-                    <td class="py-3 text-xs">${tx.receiver}</td>
-                    <td class="py-3 font-bold ${tx.risk_score >= 0.8 ? 'text-red-400' : tx.risk_score >= 0.55 ? 'text-yellow-400' : 'text-green-400'}">
-                        ${Number(tx.risk_score).toFixed(2)}
-                    </td>
-                    <td class="py-3">
-                        <span class="px-2 py-0.5 rounded text-xs ${
-                            tx.decision === 'BLOCK' ? 'bg-red-500/15 text-red-400' :
-                            tx.decision === 'REVIEW' ? 'bg-yellow-500/15 text-yellow-400' :
-                            'bg-green-500/15 text-green-400'
-                        }">${tx.decision}</span>
-                    </td>
-                    <td class="py-3 text-gray-500 text-xs">${tx.time}</td>
-                </tr>
-            `).join('');
-
-            recentBody.innerHTML = recentHtml;
-            allBody.innerHTML = allHtml;
         }
 
-        function renderProfile(profile) {
-            document.getElementById('profileView').innerHTML = `
-                <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <p class="text-gray-500 text-xs">Full Name</p>
-                        <p class="font-medium">${profile.full_name}</p>
-                    </div>
-                    <div>
-                        <p class="text-gray-500 text-xs">Phone Number</p>
-                        <p class="font-medium text-cyan-300">${profile.phone}</p>
-                    </div>
-                    <div>
-                        <p class="text-gray-500 text-xs">Email</p>
-                        <p class="font-medium">${profile.email || 'Not set'}</p>
-                    </div>
-                    <div>
-                        <p class="text-gray-500 text-xs">Account Balance</p>
-                        <p class="font-medium text-green-400">ZMW ${Number(profile.balance).toLocaleString()}</p>
-                    </div>
-                    <div>
-                        <p class="text-gray-500 text-xs">Last Login</p>
-                        <p class="font-medium">${profile.last_login}</p>
-                    </div>
-                    <div>
-                        <p class="text-gray-500 text-xs">Member Since</p>
-                        <p class="font-medium">${profile.created_at}</p>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('editFullName').value = profile.full_name || '';
-            document.getElementById('editEmail').value = profile.email || '';
+        function checkLogins() {
+            alert('Recent login activity is shown in your Notifications section.\n\nFor full login history, contact the administrator.');
         }
 
-        function renderNotifications(notifications) {
-            const html = (!notifications || notifications.length === 0)
-                ? `<p class="text-gray-500">No notifications yet.</p>`
-                : notifications.map(n => `
-                    <div class="p-3 rounded-lg bg-black/30 border border-green-900/20">
-                        <div class="flex justify-between">
-                            <span class="text-green-400 font-medium">${n.action}</span>
-                            <span class="text-gray-500 text-xs">${n.time}</span>
-                        </div>
-                        <p class="text-gray-400 text-xs mt-1">${n.details}</p>
-                    </div>
-                `).join('');
-
-            document.getElementById('notificationsPreview').innerHTML = html;
-            document.getElementById('allNotifications').innerHTML = html;
+        function downloadStatement() {
+            alert('Generating statement...\n\nThis feature will download your transaction history as PDF in the next update.');
         }
 
         // Profile update
@@ -446,11 +434,7 @@
             formData.append('full_name', document.getElementById('editFullName').value);
             formData.append('email', document.getElementById('editEmail').value);
 
-            const res = await fetch('/api/v1/user/profile', {
-                method: 'PUT',
-                body: formData
-            });
-
+            const res = await fetch('/api/v1/user/profile', { method: 'PUT', body: formData });
             if (res.ok) {
                 alert('Profile updated successfully');
                 loadAll();
@@ -459,18 +443,14 @@
             }
         });
 
-        // Report form
+        // Report
         document.getElementById('reportForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData();
             formData.append('transaction_id', document.getElementById('reportTxnId').value);
             formData.append('reason', document.getElementById('reportReason').value);
 
-            const res = await fetch('/api/v1/user/report', {
-                method: 'POST',
-                body: formData
-            });
-
+            const res = await fetch('/api/v1/user/report', { method: 'POST', body: formData });
             const msg = document.getElementById('reportMessage');
             if (res.ok) {
                 msg.className = 'mt-4 text-sm text-green-400';
@@ -482,295 +462,23 @@
             }
         });
 
+        // Transfer & Topup (placeholders - connect to your backend later)
+        document.getElementById('transferForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            alert('Send Money feature will be fully connected in the next update.');
+        });
+
+        document.getElementById('topupForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            alert('Top Up feature will be fully connected in the next update.');
+        });
+
         // Initial load
         document.addEventListener('DOMContentLoaded', () => {
             loadAll();
-            setInterval(loadAll, 20000); // Auto refresh every 20 seconds
+            setInterval(loadAll, 20000);
         });
     </script>
 </body>
 </html>
 
-<!-- ====================== WALLET SECTION ====================== -->
-<style>
-    .wallet-nav {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 25px;
-        flex-wrap: wrap;
-    }
-    .wallet-btn {
-        padding: 12px 22px;
-        border-radius: 10px;
-        border: none;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.25s ease;
-        font-size: 14px;
-    }
-    .wallet-btn.active {
-        background: linear-gradient(135deg, #00c853, #00e676);
-        color: #000;
-        box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
-    }
-    .wallet-btn:not(.active) {
-        background: #1a1a1a;
-        color: #aaa;
-        border: 1px solid #333;
-    }
-    .wallet-btn:hover:not(.active) {
-        background: #252525;
-        color: #fff;
-    }
-    .wallet-card {
-        background: #111;
-        border: 1px solid #222;
-        border-radius: 16px;
-        padding: 25px;
-        max-width: 480px;
-    }
-    .balance-display {
-        background: linear-gradient(135deg, #0a2e1a, #0d3b22);
-        border: 1px solid #00c85333;
-        border-radius: 14px;
-        padding: 20px;
-        margin-bottom: 25px;
-        text-align: center;
-    }
-    .balance-amount {
-        font-size: 32px;
-        font-weight: 700;
-        color: #00ff9d;
-        margin: 8px 0;
-    }
-    .form-group {
-        margin-bottom: 18px;
-    }
-    .form-group label {
-        display: block;
-        margin-bottom: 6px;
-        color: #aaa;
-        font-size: 13px;
-    }
-    .form-group input, .form-group textarea {
-        width: 100%;
-        padding: 13px 15px;
-        background: #0a0a0a;
-        border: 1px solid #333;
-        border-radius: 10px;
-        color: #fff;
-        font-size: 15px;
-        outline: none;
-        transition: border 0.2s;
-    }
-    .form-group input:focus, .form-group textarea:focus {
-        border-color: #00c853;
-    }
-    .submit-btn {
-        width: 100%;
-        padding: 15px;
-        background: linear-gradient(135deg, #00c853, #00e676);
-        border: none;
-        border-radius: 10px;
-        color: #000;
-        font-weight: 700;
-        font-size: 15px;
-        cursor: pointer;
-        transition: transform 0.2s;
-    }
-    .submit-btn:hover {
-        transform: translateY(-2px);
-    }
-    .result-box {
-        margin-top: 20px;
-        padding: 16px;
-        border-radius: 10px;
-        display: none;
-    }
-    .result-success {
-        background: #0a2e1a;
-        border-left: 4px solid #00ff9d;
-        color: #00ff9d;
-    }
-    .result-error {
-        background: #2e0a0a;
-        border-left: 4px solid #ff5252;
-        color: #ff5252;
-    }
-</style>
-
-<div class="section" id="section-wallet">
-    <h2 style="margin-bottom: 20px; color: #00ff9d;">📱 Airtel Money Wallet</h2>
-
-    <!-- Balance Card -->
-    <div class="balance-display">
-        <div style="color: #888; font-size: 13px;">Available Balance</div>
-        <div class="balance-amount" id="walletBalance">K0.00</div>
-        <div style="color: #666; font-size: 12px;">Airtel Money • Zambia</div>
-    </div>
-
-    <!-- Internal Tabs (Send / Top Up / History) -->
-    <div class="wallet-nav">
-        <button class="wallet-btn active" onclick="showWalletTab('transfer')">Send Money</button>
-        <button class="wallet-btn" onclick="showWalletTab('topup')">Top Up</button>
-        <button class="wallet-btn" onclick="showWalletTab('history')">History</button>
-    </div>
-
-    <!-- SEND MONEY TAB -->
-    <div id="tab-transfer" class="wallet-card">
-        <h3 style="margin-top: 0; margin-bottom: 20px;">Send Money</h3>
-        <form id="transferForm">
-            <div class="form-group">
-                <label>Recipient Phone Number</label>
-                <input type="text" id="recipientPhone" placeholder="0977 123 456" required>
-            </div>
-            <div class="form-group">
-                <label>Amount (ZMW)</label>
-                <input type="number" id="transferAmount" placeholder="50.00" min="1" step="0.01" required>
-            </div>
-            <div class="form-group">
-                <label>Note (Optional)</label>
-                <input type="text" id="transferNote" placeholder="Payment for lunch...">
-            </div>
-            <button type="submit" class="submit-btn">Send Money →</button>
-        </form>
-        <div id="transferResult" class="result-box"></div>
-    </div>
-
-    <!-- TOP UP TAB -->
-    <div id="tab-topup" class="wallet-card" style="display: none;">
-        <h3 style="margin-top: 0; margin-bottom: 20px;">Top Up Wallet</h3>
-        <form id="topupForm">
-            <div class="form-group">
-                <label>Amount to Top Up (ZMW)</label>
-                <input type="number" id="topupAmount" placeholder="100.00" min="10" max="10000" step="0.01" required>
-            </div>
-            <button type="submit" class="submit-btn">Top Up Now</button>
-        </form>
-        <div id="topupResult" class="result-box"></div>
-    </div>
-
-    <!-- HISTORY TAB -->
-    <div id="tab-history" class="wallet-card" style="display: none;">
-        <h3 style="margin-top: 0;">Transaction History</h3>
-        <p style="color: #888;">Your recent Airtel Money transactions appear in the main Transactions section.</p>
-    </div>
-</div>
-
-<script>
-// ========== WALLET TAB SWITCHING ==========
-function showWalletTab(tab) {
-    // Hide all tabs
-    document.getElementById('tab-transfer').style.display = 'none';
-    document.getElementById('tab-topup').style.display = 'none';
-    document.getElementById('tab-history').style.display = 'none';
-
-    // Remove active class
-    document.querySelectorAll('.wallet-btn').forEach(btn => btn.classList.remove('active'));
-
-    // Show selected
-    document.getElementById('tab-' + tab).style.display = 'block';
-    event.target.classList.add('active');
-}
-
-// ========== LOAD BALANCE ==========
-async function loadWalletBalance() {
-    try {
-        const res = await fetch('/api/v1/user/stats', { credentials: 'include' });
-        if (res.ok) {
-            const data = await res.json();
-            document.getElementById('walletBalance').textContent = 
-                'K' + (data.balance || 0).toFixed(2);
-        }
-    } catch (e) {
-        console.log('Could not load balance');
-    }
-}
-
-// ========== TRANSFER ==========
-document.getElementById('transferForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const resultDiv = document.getElementById('transferResult');
-    resultDiv.style.display = 'block';
-    resultDiv.className = 'result-box';
-    resultDiv.innerHTML = 'Processing...';
-
-    try {
-        const res = await fetch('/api/v1/user/airtel-transfer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-                recipient_phone: document.getElementById('recipientPhone').value.trim(),
-                amount: parseFloat(document.getElementById('transferAmount').value),
-                note: document.getElementById('transferNote').value.trim() || null
-            })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            resultDiv.className = 'result-box result-error';
-            resultDiv.innerHTML = '❌ ' + (data.detail || 'Transfer failed');
-            return;
-        }
-
-        resultDiv.className = 'result-box result-success';
-        resultDiv.innerHTML = `
-            ✅ <strong>Transfer Successful!</strong><br>
-            Ref: ${data.transaction_id}<br>
-            Amount: K${data.amount.toFixed(2)}<br>
-            New Balance: K${data.new_balance.toFixed(2)}
-        `;
-        document.getElementById('transferForm').reset();
-        loadWalletBalance();
-    } catch (err) {
-        resultDiv.className = 'result-box result-error';
-        resultDiv.innerHTML = '❌ Network error';
-    }
-});
-
-// ========== TOP UP ==========
-document.getElementById('topupForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const resultDiv = document.getElementById('topupResult');
-    resultDiv.style.display = 'block';
-    resultDiv.className = 'result-box';
-    resultDiv.innerHTML = 'Processing...';
-
-    try {
-        const res = await fetch('/api/v1/user/topup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-                amount: parseFloat(document.getElementById('topupAmount').value)
-            })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            resultDiv.className = 'result-box result-error';
-            resultDiv.innerHTML = '❌ ' + (data.detail || 'Top-up failed');
-            return;
-        }
-
-        resultDiv.className = 'result-box result-success';
-        resultDiv.innerHTML = `
-            ✅ <strong>Top-up Successful!</strong><br>
-            Ref: ${data.transaction_id}<br>
-            Amount: K${data.amount.toFixed(2)}<br>
-            New Balance: K${data.new_balance.toFixed(2)}
-        `;
-        document.getElementById('topupForm').reset();
-        loadWalletBalance();
-    } catch (err) {
-        resultDiv.className = 'result-box result-error';
-        resultDiv.innerHTML = '❌ Network error';
-    }
-});
-
-// Load balance when page opens
-loadWalletBalance();
-</script>
