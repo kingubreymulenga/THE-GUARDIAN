@@ -372,7 +372,6 @@ def get_user_profile(request: Request, db: Session = Depends(get_db)):
         "id": user.id,
         "username": user.username,
         "full_name": user.full_name,
-,
         "phone": user.phone,
         "email": user.email or "",
         "balance": user.balance or 0.0,
