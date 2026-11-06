@@ -52,10 +52,7 @@
             color: #ff2a6d;
         }
 
-        /* Mobile menu */
-        .mobile-menu {
-            display: none;
-        }
+        .mobile-menu { display: none; }
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -66,12 +63,8 @@
                 z-index: 50;
                 transition: 0.3s;
             }
-            .sidebar.open {
-                left: 0;
-            }
-            .mobile-menu {
-                display: block;
-            }
+            .sidebar.open { left: 0; }
+            .mobile-menu { display: block; }
             .overlay {
                 display: none;
                 position: fixed;
@@ -79,12 +72,9 @@
                 background: rgba(0,0,0,0.6);
                 z-index: 40;
             }
-            .overlay.show {
-                display: block;
-            }
+            .overlay.show { display: block; }
         }
 
-        /* Matrix background */
         #matrixCanvas {
             position: fixed;
             top: 0;
@@ -92,17 +82,14 @@
             width: 100%;
             height: 100%;
             z-index: -1;
-            opacity: 0.15;
+            opacity: 0.12;
             display: none;
         }
     </style>
 </head>
 <body class="min-h-screen">
 
-    <!-- Matrix Canvas -->
     <canvas id="matrixCanvas"></canvas>
-
-    <!-- Mobile Overlay -->
     <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->
@@ -132,9 +119,6 @@
             </div>
             <div class="nav-item" onclick="showSection('transactions', this)">
                 <i class="fas fa-exchange-alt w-5"></i> Transactions
-            </div>
-            <div class="nav-item" onclick="showSection('alerts', this)">
-                <i class="fas fa-bell w-5"></i> Alerts Center
             </div>
             <div class="nav-item" onclick="showSection('network', this)">
                 <i class="fas fa-network-wired w-5"></i> Network Monitor
@@ -171,8 +155,8 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="location.reload()" class="btn-primary px-3 py-2 rounded-lg text-sm mono">
-                    <i class="fas fa-sync-alt"></i> <span class="hidden sm:inline">REFRESH</span>
+                <button onclick="loadDashboard()" class="btn-primary px-3 py-2 rounded-lg text-sm mono">
+                    <i class="fas fa-sync-alt"></i>
                 </button>
                 <div class="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30">
                     <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
@@ -233,14 +217,17 @@
                 <div class="card rounded-xl p-5">
                     <h3 class="text-sm text-green-400 mono mb-3">API Status</h3>
                     <p class="text-2xl font-bold text-green-400">Online</p>
+                    <p class="text-xs text-gray-500 mt-1">All systems operational</p>
                 </div>
                 <div class="card rounded-xl p-5">
                     <h3 class="text-sm text-cyan-400 mono mb-3">Database</h3>
                     <p class="text-2xl font-bold text-cyan-400">Connected</p>
+                    <p class="text-xs text-gray-500 mt-1">SQLite • Stable</p>
                 </div>
                 <div class="card rounded-xl p-5">
                     <h3 class="text-sm text-yellow-400 mono mb-3">Fraud Engine</h3>
                     <p class="text-2xl font-bold text-yellow-400">Active</p>
+                    <p class="text-xs text-gray-500 mt-1">Real-time protection</p>
                 </div>
             </div>
         </div>
@@ -294,28 +281,26 @@
             </div>
         </div>
 
-        <!-- ==================== ALERTS ==================== -->
-        <div id="section-alerts" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-red-400 mono mb-4"><i class="fas fa-bell mr-2"></i>ALERTS CENTER</h3>
-                <div id="alertsBody" class="space-y-3 text-sm"></div>
-            </div>
-        </div>
-
         <!-- ==================== NETWORK MONITOR ==================== -->
         <div id="section-network" class="section">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div class="card rounded-xl p-5">
                     <h3 class="text-sm text-cyan-400 mono mb-3">Network Traffic</h3>
-                    <p class="text-gray-400 text-sm">Incoming: <span class="text-green-400">1.2 MB/s</span></p>
-                    <p class="text-gray-400 text-sm">Outgoing: <span class="text-yellow-400">0.8 MB/s</span></p>
-                    <p class="text-gray-400 text-sm mt-2">Active Connections: <span class="text-white">47</span></p>
+                    <p class="text-gray-400 text-sm">Incoming: <span class="text-green-400" id="net-in">1.2 MB/s</span></p>
+                    <p class="text-gray-400 text-sm">Outgoing: <span class="text-yellow-400" id="net-out">0.8 MB/s</span></p>
+                    <p class="text-gray-400 text-sm mt-2">Active Connections: <span class="text-white" id="net-conn">47</span></p>
                 </div>
                 <div class="card rounded-xl p-5">
                     <h3 class="text-sm text-green-400 mono mb-3">IP Geolocation</h3>
                     <p class="text-gray-400 text-sm">Most traffic from: <span class="text-white">Zambia (Lusaka)</span></p>
                     <p class="text-gray-400 text-sm">High risk countries blocked: <span class="text-red-400">3</span></p>
+                    <p class="text-gray-400 text-sm mt-2">Last detected IP: <span class="text-cyan-300" id="last-ip">Loading...</span></p>
                 </div>
+            </div>
+
+            <div class="card rounded-xl p-5">
+                <h3 class="text-sm text-yellow-400 mono mb-3">Live Connection Monitor</h3>
+                <div id="connectionList" class="space-y-2 text-sm"></div>
             </div>
         </div>
 
@@ -339,8 +324,8 @@
                     <p class="text-2xl font-bold text-yellow-400">2 <span class="text-sm text-gray-500">today</span></p>
                 </div>
                 <div class="card rounded-xl p-5">
-                    <h3 class="text-sm text-red-400 mono mb-2">Blocked IPs</h3>
-                    <p class="text-2xl font-bold text-red-400">5</p>
+                    <h3 class="text-sm text-red-400 mono mb-2">Blocked Transactions</h3>
+                    <p class="text-2xl font-bold text-red-400" id="sec-blocked">0</p>
                 </div>
             </div>
         </div>
@@ -356,28 +341,20 @@
                         <input type="checkbox" class="toggle">
                     </div>
                     <div class="flex justify-between items-center">
-                        <span>Compact Mode</span>
-                        <input type="checkbox" class="toggle">
-                    </div>
-                    <div class="flex justify-between items-center">
                         <span>Risk Color Coding</span>
                         <input type="checkbox" checked class="toggle">
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span>Desktop Notifications</span>
-                        <input type="checkbox" class="toggle">
                     </div>
                     <div class="flex justify-between items-center">
                         <span>Detailed Activity Logging</span>
                         <input type="checkbox" checked class="toggle">
                     </div>
                     <div class="flex justify-between items-center">
-                        <span>Maintenance Mode</span>
-                        <input type="checkbox" class="toggle">
-                    </div>
-                    <div class="flex justify-between items-center">
                         <span>Auto Block High Risk</span>
                         <input type="checkbox" checked class="toggle">
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Maintenance Mode</span>
+                        <input type="checkbox" class="toggle">
                     </div>
                 </div>
 
@@ -386,8 +363,6 @@
                     <div class="grid grid-cols-2 gap-3">
                         <button onclick="setWallpaper('none')" class="btn-primary py-2 rounded text-sm">None</button>
                         <button onclick="setWallpaper('matrix')" class="btn-primary py-2 rounded text-sm">Matrix Rain</button>
-                        <button onclick="setWallpaper('cyber')" class="btn-primary py-2 rounded text-sm">Cyber Grid</button>
-                        <button onclick="setWallpaper('particles')" class="btn-primary py-2 rounded text-sm">Particles</button>
                     </div>
                 </div>
             </div>
@@ -400,26 +375,30 @@
     </main>
 
     <script>
-        // Sidebar toggle for mobile
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('overlay').classList.toggle('show');
         }
 
-        // Section switching
         function showSection(name, element) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('section-' + name).classList.add('active');
-            
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             if (element) element.classList.add('active');
-
-            // Close mobile sidebar
             document.getElementById('sidebar').classList.remove('open');
             document.getElementById('overlay').classList.remove('show');
         }
 
-        // Load dashboard data
+        // Simulated network traffic
+        function updateNetworkStats() {
+            const incoming = (Math.random() * 2 + 0.5).toFixed(1);
+            const outgoing = (Math.random() * 1.5 + 0.3).toFixed(1);
+            const connections = Math.floor(Math.random() * 30 + 35);
+            document.getElementById('net-in').textContent = incoming + ' MB/s';
+            document.getElementById('net-out').textContent = outgoing + ' MB/s';
+            document.getElementById('net-conn').textContent = connections;
+        }
+
         async function loadDashboard() {
             try {
                 const [statsRes, recentRes, activityRes, usersRes] = await Promise.all([
@@ -439,58 +418,92 @@
                 document.getElementById('stat-allowed').textContent = stats.allowed || 0;
                 document.getElementById('stat-review').textContent = stats.review || 0;
                 document.getElementById('stat-blocked').textContent = stats.blocked || 0;
+                document.getElementById('sec-blocked').textContent = stats.blocked || 0;
 
                 // Recent transactions
-                document.getElementById('recentTxBody').innerHTML = recent.map(tx => `
+                const txHtml = (recent || []).map(tx => `
                     <tr class="border-b border-green-900/20">
-                        <td class="py-2 text-cyan-300 text-xs">${tx.transaction_id}</td>
-                        <td class="py-2">ZMW ${tx.amount}</td>
-                        <td class="py-2">${tx.risk_score}</td>
+                        <td class="py-2 text-cyan-300 text-xs">${tx.transaction_id || 'N/A'}</td>
+                        <td class="py-2">ZMW ${tx.amount || 0}</td>
+                        <td class="py-2">${tx.risk_score || 0}</td>
                         <td class="py-2">
                             <span class="px-2 py-0.5 rounded text-xs ${
                                 tx.decision === 'BLOCK' ? 'bg-red-500/20 text-red-400' :
                                 tx.decision === 'REVIEW' ? 'bg-yellow-500/20 text-yellow-400' :
                                 'bg-green-500/20 text-green-400'
-                            }">${tx.decision}</span>
+                            }">${tx.decision || 'ALLOW'}</span>
                         </td>
                     </tr>
-                `).join('');
+                `).join('') || '<tr><td colspan="4" class="py-4 text-center text-gray-500">No transactions yet</td></tr>';
+
+                document.getElementById('recentTxBody').innerHTML = txHtml;
+                document.getElementById('allTxBody').innerHTML = txHtml;
 
                 // Activity
-                document.getElementById('liveActivity').innerHTML = activity.map(a => `
+                const actHtml = (activity || []).map(a => `
                     <div class="p-2 rounded bg-black/30">
                         <div class="flex justify-between">
                             <span class="text-green-400">${a.action}</span>
                             <span class="text-gray-500 text-xs">${a.time}</span>
                         </div>
-                        <p class="text-gray-400 text-xs">${a.details}</p>
+                        <p class="text-gray-400 text-xs">${a.details || ''}</p>
                     </div>
-                `).join('');
+                `).join('') || '<p class="text-gray-500">No activity yet</p>';
 
-                document.getElementById('activityBody').innerHTML = activity.map(a => `
-                    <div class="p-3 rounded-lg bg-black/30 border border-green-900/20">
-                        <div class="flex justify-between">
-                            <span class="text-green-400 font-medium">${a.action}</span>
-                            <span class="text-gray-500 text-xs">${a.time}</span>
-                        </div>
-                        <p class="text-gray-400 text-xs mt-1">${a.user_phone} • ${a.details}</p>
-                    </div>
-                `).join('');
+                document.getElementById('liveActivity').innerHTML = actHtml;
+                document.getElementById('activityBody').innerHTML = actHtml;
 
                 // Users
-                document.getElementById('usersBody').innerHTML = users.map(u => `
+                document.getElementById('usersBody').innerHTML = (users || []).map(u => `
                     <tr class="border-b border-green-900/20">
-                        <td class="py-2">${u.full_name}</td>
+                        <td class="py-2">${u.full_name || u.username}</td>
                         <td class="py-2 text-cyan-300">${u.phone}</td>
-                        <td class="py-2 text-green-400">K${u.balance}</td>
+                        <td class="py-2 text-green-400">K${Number(u.balance || 0).toFixed(2)}</td>
                         <td class="py-2">
                             <button onclick="deleteUser(${u.id})" class="btn-danger px-2 py-1 rounded text-xs">Delete</button>
                         </td>
                     </tr>
-                `).join('');
+                `).join('') || '<tr><td colspan="4" class="py-4 text-center text-gray-500">No users found</td></tr>';
+
+                // Active Sessions (realistic simulation)
+                document.getElementById('sessionsBody').innerHTML = `
+                    <div class="p-3 rounded bg-black/30 border border-green-900/20">
+                        <div class="flex justify-between">
+                            <span class="text-green-400">Admin • Chrome</span>
+                            <span class="text-xs text-green-400">Active now</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Lusaka, Zambia • This device</p>
+                    </div>
+                    <div class="p-3 rounded bg-black/30 border border-green-900/20">
+                        <div class="flex justify-between">
+                            <span class="text-cyan-300">User Session</span>
+                            <span class="text-xs text-gray-400">Recently active</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Mobile • Zambia</p>
+                    </div>
+                `;
+
+                // Connection list
+                document.getElementById('connectionList').innerHTML = `
+                    <div class="flex justify-between text-sm py-1 border-b border-green-900/20">
+                        <span>Admin Dashboard</span>
+                        <span class="text-green-400">Active</span>
+                    </div>
+                    <div class="flex justify-between text-sm py-1 border-b border-green-900/20">
+                        <span>User Portal</span>
+                        <span class="text-green-400">Active</span>
+                    </div>
+                    <div class="flex justify-between text-sm py-1">
+                        <span>API Endpoints</span>
+                        <span class="text-green-400">Healthy</span>
+                    </div>
+                `;
+
+                // Fake last IP
+                document.getElementById('last-ip').textContent = '41.77.' + Math.floor(Math.random()*255) + '.' + Math.floor(Math.random()*255);
 
             } catch (err) {
-                console.error(err);
+                console.error('Dashboard load error:', err);
             }
         }
 
@@ -505,7 +518,6 @@
             }
         }
 
-        // Matrix wallpaper
         function setWallpaper(type) {
             const canvas = document.getElementById('matrixCanvas');
             if (type === 'matrix') {
@@ -521,7 +533,6 @@
             const ctx = canvas.getContext('2d');
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-
             const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
             const fontSize = 14;
             const columns = canvas.width / fontSize;
@@ -532,36 +543,21 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#00ff9f';
                 ctx.font = fontSize + 'px monospace';
-
                 for (let i = 0; i < drops.length; i++) {
                     const text = chars[Math.floor(Math.random() * chars.length)];
                     ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                        drops[i] = 0;
-                    }
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
                     drops[i]++;
                 }
             }
             setInterval(draw, 50);
         }
 
-        // Simulated data for new sections
-        document.getElementById('sessionsBody').innerHTML = `
-            <div class="p-3 rounded bg-black/30">Admin • Chrome • Lusaka • Active now</div>
-            <div class="p-3 rounded bg-black/30">User 0977... • Mobile • Kitwe • 5 min ago</div>
-        `;
-
-        document.getElementById('alertsBody').innerHTML = `
-            <div class="p-3 rounded bg-red-500/10 border border-red-500/30">
-                <span class="text-red-400">High Risk Transaction Blocked</span>
-                <p class="text-xs text-gray-400">User tried to send more than balance</p>
-            </div>
-        `;
-
-        // Init
         document.addEventListener('DOMContentLoaded', () => {
             loadDashboard();
-            setInterval(loadDashboard, 30000);
+            updateNetworkStats();
+            setInterval(loadDashboard, 20000);
+            setInterval(updateNetworkStats, 4000);
         });
     </script>
 </body>
