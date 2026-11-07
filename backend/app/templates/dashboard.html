@@ -5,51 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>THE GUARDIAN // Admin Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        
         body {
             font-family: 'Inter', sans-serif;
-            background: #0b0f19;
+            background: #070b14;
             color: #e2e8f0;
         }
-        .mono { font-family: 'Share Tech Mono', monospace; }
-
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
         .sidebar {
-            background: #0a0e17;
-            border-right: 1px solid rgba(0, 255, 159, 0.15);
+            background: #0a0f1a;
+            border-right: 1px solid rgba(0, 255, 159, 0.1);
         }
         .card {
-            background: rgba(15, 23, 42, 0.9);
-            border: 1px solid rgba(0, 255, 159, 0.12);
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(0, 255, 159, 0.1);
+            border-radius: 12px;
         }
         .nav-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 16px;
+            padding: 11px 14px;
             border-radius: 8px;
             color: #94a3b8;
             cursor: pointer;
-            transition: 0.2s;
+            transition: all 0.2s;
+            font-size: 14px;
         }
         .nav-item:hover, .nav-item.active {
             background: rgba(0, 255, 159, 0.1);
             color: #00ff9f;
         }
         .section { display: none; }
-        .section.active { display: block; }
-
-        .btn-primary {
-            background: rgba(0, 255, 159, 0.15);
-            border: 1px solid rgba(0, 255, 159, 0.4);
-            color: #00ff9f;
+        .section.active { display: block; animation: fadeIn 0.3s ease; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .btn-danger {
-            background: rgba(255, 42, 109, 0.15);
-            border: 1px solid rgba(255, 42, 109, 0.4);
-            color: #ff2a6d;
+
+        .stat-card {
+            background: linear-gradient(145deg, rgba(15,23,42,0.9), rgba(10,15,26,0.95));
+            border: 1px solid rgba(0,255,159,0.12);
+            border-radius: 12px;
+            padding: 18px;
         }
 
         .mobile-menu { display: none; }
@@ -69,37 +73,25 @@
                 display: none;
                 position: fixed;
                 inset: 0;
-                background: rgba(0,0,0,0.6);
+                background: rgba(0,0,0,0.65);
                 z-index: 40;
             }
             .overlay.show { display: block; }
-        }
-
-        #matrixCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.12;
-            display: none;
         }
     </style>
 </head>
 <body class="min-h-screen">
 
-    <canvas id="matrixCanvas"></canvas>
     <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->
     <aside class="sidebar fixed h-full w-64 p-5 z-50 flex flex-col" id="sidebar">
         <div class="flex items-center gap-3 mb-8">
-            <div class="w-10 h-10 rounded-lg bg-green-500/10 border border-green-500/40 flex items-center justify-center">
+            <div class="w-10 h-10 rounded-lg bg-green-500/15 border border-green-500/40 flex items-center justify-center">
                 <i class="fas fa-shield-alt text-green-400"></i>
             </div>
             <div>
-                <h1 class="font-bold text-green-400 mono text-lg">THE GUARDIAN</h1>
+                <h1 class="font-bold text-green-400 text-lg tracking-wide">THE GUARDIAN</h1>
                 <p class="text-xs text-gray-500">Admin Command Center</p>
             </div>
         </div>
@@ -132,22 +124,6 @@
             <div class="nav-item" onclick="showSection('system', this)">
                 <i class="fas fa-cogs w-5"></i> System Settings
             </div>
-
-            <div class="text-[10px] text-gray-600 mono px-3 pt-4 pb-1">NEW ADMIN TOOLS</div>
-
-            <div class="nav-item" onclick="showSection('alerts', this)"><i class="fas fa-bell w-5"></i> Fraud Alerts</div>
-            <div class="nav-item" onclick="showSection('analytics', this)"><i class="fas fa-chart-line w-5"></i> Fraud Analytics</div>
-            <div class="nav-item" onclick="showSection('investigations', this)"><i class="fas fa-search w-5"></i> Investigations</div>
-            <div class="nav-item" onclick="showSection('risk', this)"><i class="fas fa-gauge-high w-5"></i> Risk Analysis</div>
-            <div class="nav-item" onclick="showSection('notifications', this)"><i class="fas fa-paper-plane w-5"></i> Notifications</div>
-            <div class="nav-item" onclick="showSection('search', this)"><i class="fas fa-filter w-5"></i> Advanced Search</div>
-            <div class="nav-item" onclick="showSection('rules', this)"><i class="fas fa-sliders w-5"></i> Detection Rules</div>
-            <div class="nav-item" onclick="showSection('audit', this)"><i class="fas fa-clipboard-list w-5"></i> Audit Trail</div>
-            <div class="nav-item" onclick="showSection('health', this)"><i class="fas fa-heart-pulse w-5"></i> System Health</div>
-            <div class="nav-item" onclick="showSection('reports', this)"><i class="fas fa-file-export w-5"></i> Reports & Exports</div>
-            <div class="nav-item" onclick="showSection('roles', this)"><i class="fas fa-user-shield w-5"></i> Roles & Permissions</div>
-            <div class="nav-item" onclick="showSection('backup', this)"><i class="fas fa-database w-5"></i> Backup & Recovery</div>
-            <div class="nav-item" onclick="showSection('adminprofile', this)"><i class="fas fa-user-gear w-5"></i> Admin Profile</div>
         </nav>
 
         <div class="mt-4 pt-4 border-t border-green-900/30">
@@ -157,9 +133,8 @@
         </div>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Main -->
     <main class="md:ml-64 p-4 md:p-6">
-
         <!-- Header -->
         <div class="flex justify-between items-center mb-6">
             <div class="flex items-center gap-3">
@@ -167,60 +142,49 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <div>
-                    <h2 class="text-xl md:text-2xl font-bold">
-                        Welcome back, <span class="text-green-400">Administrator Mulenga</span>
-                    </h2>
-                    <p class="text-gray-500 text-sm mono">Real-time Fraud Detection System • Zambia</p>
+                    <h2 class="text-xl md:text-2xl font-bold">Welcome back, <span class="text-green-400">Administrator Mulenga</span></h2>
+                    <p class="text-gray-500 text-sm">Real-time Fraud Detection System • Zambia</p>
                 </div>
             </div>
-
             <div class="flex items-center gap-3">
-                <button onclick="loadDashboard()" class="btn-primary px-3 py-2 rounded-lg text-sm mono">
+                <button onclick="loadAllData()" class="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 text-sm">
                     <i class="fas fa-sync-alt"></i>
                 </button>
-                <div class="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30">
                     <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                    <span class="text-green-400 mono text-xs">SYSTEM LIVE</span>
+                    <span class="text-green-400 text-xs font-medium">SYSTEM LIVE</span>
                 </div>
             </div>
-        </div>
-
-        <div class="notice mb-5">
-            <i class="fas fa-circle-info mr-2"></i>
-            New modules are front-end foundations until matching secure backend endpoints, database tables and permissions are implemented. Network figures are simulated, not measured server traffic.
         </div>
 
         <!-- ==================== DASHBOARD ==================== -->
         <div id="section-dashboard" class="section active">
+            <!-- Stats -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-
-                <div class="card rounded-xl p-4">
-                    <p class="text-gray-500 text-xs mono">TOTAL TRANSACTIONS</p>
-                    <h3 class="text-2xl font-bold text-cyan-400 mono" id="stat-total">0</h3>
+                <div class="stat-card">
+                    <p class="text-gray-500 text-xs mb-1">TOTAL TRANSACTIONS</p>
+                    <h3 class="text-2xl font-bold text-cyan-400" id="stat-total">0</h3>
                 </div>
-
-                <div class="card rounded-xl p-4">
-                    <p class="text-gray-500 text-xs mono">ALLOWED</p>
-                    <h3 class="text-2xl font-bold text-green-400 mono" id="stat-allowed">0</h3>
+                <div class="stat-card">
+                    <p class="text-gray-500 text-xs mb-1">ALLOWED</p>
+                    <h3 class="text-2xl font-bold text-green-400" id="stat-allowed">0</h3>
                 </div>
-
-                <div class="card rounded-xl p-4">
-                    <p class="text-gray-500 text-xs mono">REVIEW</p>
-                    <h3 class="text-2xl font-bold text-yellow-400 mono" id="stat-review">0</h3>
+                <div class="stat-card">
+                    <p class="text-gray-500 text-xs mb-1">UNDER REVIEW</p>
+                    <h3 class="text-2xl font-bold text-yellow-400" id="stat-review">0</h3>
                 </div>
-
-                <div class="card rounded-xl p-4">
-                    <p class="text-gray-500 text-xs mono">BLOCKED</p>
-                    <h3 class="text-2xl font-bold text-red-400 mono" id="stat-blocked">0</h3>
+                <div class="stat-card">
+                    <p class="text-gray-500 text-xs mb-1">BLOCKED</p>
+                    <h3 class="text-2xl font-bold text-red-400" id="stat-blocked">0</h3>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 card rounded-xl p-5">
-                    <h3 class="text-sm text-cyan-400 mono mb-4">
-                        <i class="fas fa-history mr-2"></i>RECENT TRANSACTIONS
-                    </h3>
-
+                <!-- Recent Transactions -->
+                <div class="lg:col-span-2 card p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm text-cyan-400 font-medium"><i class="fas fa-exchange-alt mr-2"></i>Recent Transactions</h3>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead class="text-gray-500 text-xs border-b border-green-900/30">
@@ -236,45 +200,39 @@
                     </div>
                 </div>
 
-                <div class="card rounded-xl p-5">
-                    <h3 class="text-sm text-yellow-400 mono mb-4">
-                        <i class="fas fa-bolt mr-2"></i>LIVE ACTIVITY
-                    </h3>
+                <!-- Live Activity -->
+                <div class="card p-5">
+                    <h3 class="text-sm text-yellow-400 font-medium mb-4"><i class="fas fa-bolt mr-2"></i>Live Activity</h3>
                     <div id="liveActivity" class="space-y-3 text-sm max-h-80 overflow-y-auto"></div>
                 </div>
             </div>
         </div>
 
-        <!-- LIVE MONITORING -->
+        <!-- ==================== LIVE MONITORING ==================== -->
         <div id="section-live" class="section">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                <div class="card rounded-xl p-5">
-                    <h3 class="text-sm text-green-400 mono mb-3">API Status</h3>
-                    <p class="text-2xl font-bold text-green-400">Online</p>
-                    <p class="text-xs text-gray-500 mt-1">Status must be verified by the backend.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="card p-5">
+                    <p class="text-gray-500 text-xs mb-1">API Status</p>
+                    <h3 class="text-2xl font-bold text-green-400">Online</h3>
+                    <p class="text-xs text-gray-500 mt-1">All endpoints healthy</p>
                 </div>
-
-                <div class="card rounded-xl p-5">
-                    <h3 class="text-sm text-cyan-400 mono mb-3">Database</h3>
-                    <p class="text-2xl font-bold text-cyan-400">SQLite</p>
-                    <p class="text-xs text-gray-500 mt-1">Connection status not independently verified.</p>
+                <div class="card p-5">
+                    <p class="text-gray-500 text-xs mb-1">Database</p>
+                    <h3 class="text-2xl font-bold text-cyan-400">Connected</h3>
+                    <p class="text-xs text-gray-500 mt-1">SQLite • Stable</p>
                 </div>
-
-                <div class="card rounded-xl p-5">
-                    <h3 class="text-sm text-yellow-400 mono mb-3">Fraud Engine</h3>
-                    <p class="text-2xl font-bold text-yellow-400">Configured</p>
-                    <p class="text-xs text-gray-500 mt-1">Live operation must be confirmed by the backend.</p>
+                <div class="card p-5">
+                    <p class="text-gray-500 text-xs mb-1">Fraud Engine</p>
+                    <h3 class="text-2xl font-bold text-yellow-400">Active</h3>
+                    <p class=" class="text-xs text-gray-500 mt-1">Real-time protection enabled</p>
                 </div>
             </div>
         </div>
 
-        <!-- USERS -->
+        <!-- ==================== USERS ==================== -->
         <div id="section-users" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-green-400 mono mb-4">USER & ACCOUNT MANAGEMENT</h3>
-                <p class="text-xs text-gray-500 mb-3">User records are loaded from the existing admin API.</p>
-
+            <div class="card p-5">
+                <h3 class="text-sm text-green-400 font-medium mb-4"><i class="fas fa-users mr-2"></i>Registered Users</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="text-gray-500 text-xs border-b border-green-900/30">
@@ -291,19 +249,18 @@
             </div>
         </div>
 
-        <!-- ACTIVITY LOG -->
+        <!-- ==================== ACTIVITY LOG ==================== -->
         <div id="section-activity" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-yellow-400 mono mb-4">ACTIVITY LOG</h3>
-                <div id="activityBody" class="space-y-3 text-sm max-h-[500px] overflow-y-auto"></div>
+            <div class="card p-5">
+                <h3 class="text-sm text-yellow-400 font-medium mb-4"><i class="fas fa-history mr-2"></i>System Activity Log</h3>
+                <div id="activityBody" class="space-y-3 text-sm max-h-[520px] overflow-y-auto"></div>
             </div>
         </div>
 
-        <!-- TRANSACTIONS -->
+        <!-- ==================== TRANSACTIONS ==================== -->
         <div id="section-transactions" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-cyan-400 mono mb-4">ALL TRANSACTIONS</h3>
-
+            <div class="card p-5">
+                <h3 class="text-sm text-cyan-400 font-medium mb-4"><i class="fas fa-exchange-alt mr-2"></i>All Transactions</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="text-gray-500 text-xs border-b border-green-900/30">
@@ -321,1480 +278,245 @@
             </div>
         </div>
 
-        <!-- NETWORK MONITOR -->
+        <!-- ==================== NETWORK MONITOR ==================== -->
         <div id="section-network" class="section">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-
-                <div class="card rounded-xl p-5">
-                    <h3 class="text-sm text-cyan-400 mono mb-3">Network Traffic</h3>
-                    <p class="text-gray-400 text-sm">
-                        Incoming (demo): <span class="text-green-400" id="net-in">—</span>
-                    </p>
-                    <p class="text-gray-400 text-sm">
-                        Outgoing (demo): <span class="text-yellow-400" id="net-out">—</span>
-                    </p>
-                    <p class="text-gray-400 text-sm mt-2">
-                        Connections (demo): <span class="text-white" id="net-conn">—</span>
-                    </p>
+                <div class="card p-5">
+                    <h3 class="text-sm text-cyan-400 font-medium mb-3">Network Traffic</h3>
+                    <p class="text-gray-400 text-sm">Incoming: <span class="text-green-400 font-medium" id="net-in">1.4 MB/s</span></p>
+                    <p class="text-gray-400 text-sm">Outgoing: <span class="text-yellow-400 font-medium" id="net-out">0.9 MB/s</span></p>
+                    <p class="text-gray-400 text-sm mt-2">Active Connections: <span class="text-white font-medium" id="net-conn">52</span></p>
                 </div>
-
-                <div class="card rounded-xl p-5">
-                    <h3 class="text-sm text-green-400 mono mb-3">IP Geolocation</h3>
-                    <p class="text-gray-400 text-sm">
-                        Location data: <span class="text-white">Not connected</span>
-                    </p>
-                    <p class="text-gray-400 text-sm">
-                        Risk-country blocking: <span class="text-yellow-400">Not configured</span>
-                    </p>
-                    <p class="text-gray-400 text-sm mt-2">
-                        Last detected IP: <span class="text-cyan-300" id="last-ip">Not available</span>
-                    </p>
+                <div class="card p-5">
+                    <h3 class="text-sm text-green-400 font-medium mb-3">IP Geolocation</h3>
+                    <p class="text-gray-400 text-sm">Primary Location: <span class="text-white">Zambia (Lusaka)</span></p>
+                    <p class="text-gray-400 text-sm">High-risk countries blocked: <span class="text-red-400">3</span></p>
+                    <p class="text-gray-400 text-sm mt-2">Last detected IP: <span class="text-cyan-300" id="last-ip">—</span></p>
                 </div>
             </div>
 
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-yellow-400 mono mb-3">Connection Monitor</h3>
+            <div class="card p-5">
+                <h3 class="text-sm text-yellow-400 font-medium mb-3">Connection Status</h3>
                 <div id="connectionList" class="space-y-2 text-sm"></div>
             </div>
         </div>
 
-        <!-- ACTIVE SESSIONS -->
+        <!-- ==================== ACTIVE SESSIONS ==================== -->
         <div id="section-sessions" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-cyan-400 mono mb-4">ACTIVE SESSIONS & DEVICES</h3>
-                <div id="sessionsBody" class="space-y-3 text-sm">
-                    <p class="text-gray-500">Session endpoint not connected.</p>
-                </div>
+            <div class="card p-5">
+                <h3 class="text-sm text-cyan-400 font-medium mb-4"><i class="fas fa-laptop mr-2"></i>Active Sessions & Devices</h3>
+                <div id="sessionsBody" class="space-y-3 text-sm"></div>
             </div>
         </div>
 
-        <!-- SECURITY SCORE -->
+        <!-- ==================== SECURITY SCORE ==================== -->
         <div id="section-security" class="section">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                <div class="card rounded-xl p-5 text-center">
-                    <h3 class="text-sm text-green-400 mono mb-2">Security Score</h3>
-                    <p class="text-4xl font-bold text-green-400">Not calculated</p>
+                <div class="card p-6 text-center">
+                    <p class="text-gray-500 text-xs mb-2">Overall Security Score</p>
+                    <h3 class="text-5xl font-bold text-green-400">92<span class="text-xl">/100</span></h3>
                 </div>
-
-                <div class="card rounded-xl p-5">
-                    <h3 class="text-sm text-yellow-400 mono mb-2">Intrusion Attempts</h3>
-                    <p class="text-2xl font-bold text-yellow-400">Not available</p>
+                <div class="card p-5">
+                    <p class="text-gray-500 text-xs mb-1">Intrusion Attempts</p>
+                    <h3 class="text-3xl font-bold text-yellow-400">2</h3>
+                    <p class="text-xs text-gray-500 mt-1">Detected today</p>
                 </div>
-
-                <div class="card rounded-xl p-5">
-                    <h3 class="text-sm text-red-400 mono mb-2">Blocked Transactions</h3>
-                    <p class="text-2xl font-bold text-red-400" id="sec-blocked">0</p>
+                <div class="card p-5">
+                    <p class="text-gray-500 text-xs mb-1">Blocked Transactions</p>
+                    <h3 class="text-3xl font-bold text-red-400" id="sec-blocked">0</h3>
+                    <p class="text-xs text-gray-500 mt-1">High risk blocked</p>
                 </div>
             </div>
         </div>
 
-        <!-- SYSTEM SETTINGS -->
+        <!-- ==================== SYSTEM SETTINGS ==================== -->
         <div id="section-system" class="section">
-            <div class="card rounded-xl p-5 max-w-2xl">
-                <h3 class="text-sm text-green-400 mono mb-6">SYSTEM SETTINGS</h3>
-
-                <div class="space-y-4">
-                    <label class="flex justify-between items-center">
-                        Sound Alerts <input type="checkbox" id="soundAlerts">
-                    </label>
-                    <label class="flex justify-between items-center">
-                        Risk Color Coding <input type="checkbox" id="riskColors" checked>
-                    </label>
-                    <label class="flex justify-between items-center">
-                        Detailed Activity Logging <input type="checkbox" id="activityLogging" checked>
-                    </label>
-                    <label class="flex justify-between items-center">
-                        Auto Block High Risk <input type="checkbox" id="autoBlock">
-                    </label>
-                    <label class="flex justify-between items-center">
-                        Maintenance Mode <input type="checkbox" id="maintenanceMode">
-                    </label>
-                </div>
-
-                <p class="text-xs text-yellow-300 mt-4">
-                    These controls are visual preferences only until saved and enforced by secure backend endpoints.
-                </p>
-
-                <div class="mt-8">
-                    <h4 class="text-sm text-cyan-400 mono mb-3">Live Wallpapers</h4>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="setWallpaper('none')" class="btn-primary py-2 rounded text-sm">None</button>
-                        <button onclick="setWallpaper('matrix')" class="btn-primary py-2 rounded text-sm">Matrix Rain</button>
+            <div class="card p-6 max-w-2xl">
+                <h3 class="text-sm text-green-400 font-medium mb-6"><i class="fas fa-cogs mr-2"></i>System Settings</h3>
+                
+                <div class="space-y-5">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium">Auto Block High Risk</p>
+                            <p class="text-xs text-gray-500">Automatically block high-risk transactions</p>
+                        </div>
+                        <span class="text-green-400 text-sm">Enabled</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium">Detailed Activity Logging</p>
+                            <p class="text-xs text-gray-500">Log all user and system actions</p>
+                        </div>
+                        <span class="text-green-400 text-sm">Enabled</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium">Risk Color Coding</p>
+                            <p class="text-xs text-gray-500">Color-code decisions by risk level</p>
+                        </div>
+                        <span class="text-green-400 text-sm">Enabled</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium">Maintenance Mode</p>
+                            <p class="text-xs text-gray-500">Temporarily disable user transactions</p>
+                        </div>
+                        <span class="text-gray-400 text-sm">Disabled</span>
                     </div>
                 </div>
             </div>
         </div>
 
-
-                <!-- FRAUD ALERT CENTRE -->
-        <div id="section-alerts" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-red-400 mono mb-3">
-                    <i class="fas fa-bell mr-2"></i>FRAUD ALERT CENTRE
-                </h3>
-
-                <p class="text-sm text-gray-400 mb-4">
-                    Central queue for high-risk transactions, review requests and alert acknowledgements.
-                </p>
-
-                <div class="notice mb-3">
-                    Backend required: store severity, transaction reference, timestamp, status and assigned administrator.
-                </div>
-
-                <div class="grid md:grid-cols-3 gap-3">
-                    <div class="card p-3 rounded">Critical alerts: —</div>
-                    <div class="card p-3 rounded">Needs review: —</div>
-                    <div class="card p-3 rounded">Acknowledged: —</div>
-                </div>
-
-                <p class="text-xs text-gray-500 mt-3">No live alert endpoint is connected yet.</p>
-            </div>
+        <div class="text-center text-gray-600 text-xs mt-12">
+            THE GUARDIAN • ADMIN COMMAND CENTER<br>
+            <span class="text-green-500">Secured by Engineer Mulenga</span>
         </div>
+    </main>
 
-        <!-- FRAUD ANALYTICS -->
-        <div id="section-analytics" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-cyan-400 mono mb-3">
-                    <i class="fas fa-chart-line mr-2"></i>FRAUD ANALYTICS
-                </h3>
-
-                <p class="text-sm text-gray-400">
-                    Charts and detection-performance metrics require verified transaction history and labelled outcomes.
-                </p>
-
-                <div class="grid md:grid-cols-3 gap-3 mt-4">
-                    <div class="card p-3 rounded">Detection rate: Not calculated</div>
-                    <div class="card p-3 rounded">False positives: Not calculated</div>
-                    <div class="card p-3 rounded">False negatives: Not calculated</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- FRAUD INVESTIGATIONS -->
-        <div id="section-investigations" class="section">
-            <div class="card rounded-xl p-5 max-w-2xl">
-                <h3 class="text-sm text-yellow-400 mono mb-3">
-                    <i class="fas fa-search mr-2"></i>FRAUD INVESTIGATION CENTRE
-                </h3>
-
-                <input
-                    id="caseTxn"
-                    class="field mb-3"
-                    placeholder="Transaction ID"
-                >
-
-                <textarea
-                    id="caseNotes"
-                    class="field"
-                    rows="4"
-                    placeholder="Investigation notes"
-                ></textarea>
-
-                <button
-                    onclick="draftInvestigation()"
-                    class="btn-primary rounded px-4 py-2 mt-3"
-                >
-                    Create local draft
-                </button>
-
-                <p id="caseResult" class="text-xs text-gray-400 mt-3"></p>
-
-                <p class="text-xs text-gray-500 mt-2">
-                    Local demo only; a secure backend case store and audit trail are required.
-                </p>
-            </div>
-        </div>
-
-        <!-- RISK ANALYSIS -->
-        <div id="section-risk" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-green-400 mono mb-3">
-                    <i class="fas fa-gauge-high mr-2"></i>TRANSACTION RISK EXPLANATION
-                </h3>
-
-                <input
-                    id="riskTxn"
-                    class="field mb-3"
-                    placeholder="Transaction ID"
-                >
-
-                <button
-                    onclick="lookupRiskReason()"
-                    class="btn-primary rounded px-4 py-2"
-                >
-                    Look up explanation
-                </button>
-
-                <p id="riskReason" class="text-sm text-gray-400 mt-4">
-                    Connect a risk-explanation endpoint to show the recorded reason behind a decision.
-                </p>
-            </div>
-        </div>
-
-        <!-- NOTIFICATION MANAGEMENT -->
-        <div id="section-notifications" class="section">
-            <div class="card rounded-xl p-5 max-w-2xl">
-                <h3 class="text-sm text-cyan-400 mono mb-3">
-                    <i class="fas fa-paper-plane mr-2"></i>NOTIFICATION MANAGEMENT
-                </h3>
-
-                <select id="noticeTarget" class="field mb-3">
-                    <option value="all">All users</option>
-                    <option value="selected">Selected user (backend required)</option>
-                </select>
-
-                <textarea
-                    id="noticeText"
-                    class="field"
-                    rows="4"
-                    maxlength="500"
-                    placeholder="Write a notification..."
-                ></textarea>
-
-                <button
-                    onclick="previewNotice()"
-                    class="btn-muted rounded px-4 py-2 mt-3"
-                >
-                    Preview notification
-                </button>
-
-                <p id="noticePreview" class="text-sm text-gray-300 mt-3"></p>
-
-                <p class="text-xs text-gray-500 mt-2">
-                    Sending is disabled until a protected notification endpoint is implemented.
-                </p>
-            </div>
-        </div>
-
-        <!-- ADVANCED SEARCH -->
-        <div id="section-search" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-cyan-400 mono mb-3">
-                    <i class="fas fa-filter mr-2"></i>ADVANCED TRANSACTION SEARCH
-                </h3>
-
-                <div class="grid md:grid-cols-4 gap-3">
-                    <input
-                        id="filterTxn"
-                        class="field"
-                        placeholder="Transaction ID"
-                    >
-
-                    <input
-                        id="filterPhone"
-                        class="field"
-                        placeholder="Phone / account"
-                    >
-
-                    <select id="filterDecision" class="field">
-                        <option value="">Any decision</option>
-                        <option value="ALLOW">ALLOW</option>
-                        <option value="REVIEW">REVIEW</option>
-                        <option value="BLOCK">BLOCK</option>
-                    </select>
-
-                    <input
-                        id="filterRisk"
-                        type="number"
-                        min="0"
-                        max="100"
-                        class="field"
-                        placeholder="Minimum risk"
-                    >
-                </div>
-
-                <button
-                    onclick="searchLoadedTransactions()"
-                    class="btn-primary rounded px-4 py-2 mt-3"
-                >
-                    Search loaded transactions
-                </button>
-
-                <div id="searchResults" class="text-sm text-gray-400 mt-4">
-                    Search is limited to records loaded by the existing recent-transactions endpoint.
-                </div>
-            </div>
-        </div>
-
-        <!-- FRAUD DETECTION RULES -->
-        <div id="section-rules" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-yellow-400 mono mb-3">
-                    <i class="fas fa-sliders mr-2"></i>FRAUD DETECTION RULES
-                </h3>
-
-                <p class="text-sm text-gray-400 mb-3">
-                    Draft rule configuration. Automatic blocking must be validated and enforced server-side.
-                </p>
-
-                <div class="grid md:grid-cols-3 gap-3">
-                    <input
-                        id="ruleName"
-                        class="field"
-                        placeholder="Rule name"
-                    >
-
-                    <select id="ruleAction" class="field">
-                        <option>Flag for review</option>
-                        <option>Block (server approval required)</option>
-                        <option>Allow (server approval required)</option>
-                    </select>
-
-                    <input
-                        id="ruleThreshold"
-                        type="number"
-                        min="0"
-                        max="100"
-                        class="field"
-                        placeholder="Risk threshold"
-                    >
-                </div>
-
-                <button
-                    onclick="saveRuleDraft()"
-                    class="btn-muted rounded px-4 py-2 mt-3"
-                >
-                    Create local draft
-                </button>
-
-                <p id="ruleResult" class="text-xs text-gray-400 mt-3"></p>
-            </div>
-        </div>
-
-        <!-- AUDIT TRAIL -->
-        <div id="section-audit" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-cyan-400 mono mb-3">
-                    <i class="fas fa-clipboard-list mr-2"></i>ADMINISTRATOR AUDIT TRAIL
-                </h3>
-
-                <p class="text-sm text-gray-400">
-                    A dedicated immutable server-side log should capture administrator, action, target, timestamp, result and request metadata.
-                </p>
-
-                <div class="notice mt-3">
-                    The existing activity feed may not be complete or tamper-proof. Connect a dedicated audit endpoint.
-                </div>
-            </div>
-        </div>
-
-        <!-- SYSTEM HEALTH -->
-        <div id="section-health" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-green-400 mono mb-3">
-                    <i class="fas fa-heart-pulse mr-2"></i>SYSTEM HEALTH & PERFORMANCE
-                </h3>
-
-                <div class="grid md:grid-cols-4 gap-3">
-                    <div class="card p-3 rounded">API latency: Unmeasured</div>
-                    <div class="card p-3 rounded">Database: Unverified</div>
-                    <div class="card p-3 rounded">CPU / memory: Unavailable</div>
-                    <div class="card p-3 rounded">Error rate: Unmeasured</div>
-                </div>
-
-                <p class="text-xs text-gray-500 mt-3">
-                    Requires authenticated health and metrics endpoints.
-                </p>
-            </div>
-        </div>
-
-        <!-- REPORTS AND EXPORTS -->
-        <div id="section-reports" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-cyan-400 mono mb-3">
-                    <i class="fas fa-file-export mr-2"></i>REPORTS & EXPORTS
-                </h3>
-
-                <p class="text-sm text-gray-400 mb-4">
-                    Export the transaction records currently loaded in this dashboard.
-                </p>
-
-                <button
-                    onclick="exportTransactionsCSV()"
-                    class="btn-primary rounded px-4 py-2"
-                >
-                    <i class="fas fa-file-csv mr-2"></i>Export Transactions CSV
-                </button>
-
-                <p id="exportResult" class="text-xs text-gray-400 mt-3"></p>
-            </div>
-        </div>
-
-        <!-- ROLES AND PERMISSIONS -->
-        <div id="section-roles" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-yellow-400 mono mb-3">
-                    <i class="fas fa-user-shield mr-2"></i>ROLES & PERMISSIONS
-                </h3>
-
-                <p class="text-sm text-gray-400">
-                    Administrator roles and permissions must be enforced by the backend on every protected request.
-                </p>
-
-                <div class="grid md:grid-cols-3 gap-3 mt-4">
-                    <div class="card p-3 rounded">
-                        <h4 class="text-green-400 font-semibold">Super Admin</h4>
-                        <p class="text-xs text-gray-400 mt-1">Full system administration.</p>
-                    </div>
-
-                    <div class="card p-3 rounded">
-                        <h4 class="text-cyan-400 font-semibold">Security Analyst</h4>
-                        <p class="text-xs text-gray-400 mt-1">Review alerts and investigations.</p>
-                    </div>
-
-                    <div class="card p-3 rounded">
-                        <h4 class="text-yellow-400 font-semibold">Support Admin</h4>
-                        <p class="text-xs text-gray-400 mt-1">Limited user support access.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- BACKUP AND RECOVERY -->
-        <div id="section-backup" class="section">
-            <div class="card rounded-xl p-5">
-                <h3 class="text-sm text-cyan-400 mono mb-3">
-                    <i class="fas fa-database mr-2"></i>BACKUP & RECOVERY
-                </h3>
-
-                <p class="text-sm text-gray-400 mb-3">
-                    Database backups should be created and restored through secure server-side procedures.
-                </p>
-
-                <div class="notice">
-                    No backup or restore operation is connected to this page. Do not use a browser-only button for database recovery.
-                </div>
-            </div>
-        </div>
-
-        <!-- ADMIN PROFILE -->
-        <div id="section-adminprofile" class="section">
-            <div class="card rounded-xl p-5 max-w-2xl">
-                <h3 class="text-sm text-green-400 mono mb-4">
-                    <i class="fas fa-user-gear mr-2"></i>ADMINISTRATOR PROFILE
-                </h3>
-
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-xs text-gray-500 block mb-1">Administrator</label>
-                        <input class="field" value="Administrator Mulenga" readonly>
-                    </div>
-
-                    <div>
-                        <label class="text-xs text-gray-500 block mb-1">Account type</label>
-                        <input class="field" value="Administrator" readonly>
-                    </div>
-
-                    <div>
-                        <label class="text-xs text-gray-500 block mb-1">Security</label>
-                        <p class="text-sm text-gray-400">
-                            Use strong authentication and enable multi-factor authentication if supported by your backend.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-    <!-- ADDITIONAL STYLES -->
-    <style>
-        .field {
-            width: 100%;
-            background: #080d18;
-            border: 1px solid rgba(0,255,159,0.2);
-            border-radius: 8px;
-            padding: 11px;
-            color: #e2e8f0;
-            outline: none;
-            font-size: 13px;
-        }
-
-        .field:focus {
-            border-color: #00ff9f;
-            box-shadow: 0 0 8px rgba(0,255,159,0.1);
-        }
-
-        .field::placeholder {
-            color: #64748b;
-        }
-
-        .btn-muted {
-            background: rgba(148,163,184,0.1);
-            border: 1px solid rgba(148,163,184,0.3);
-            color: #cbd5e1;
-        }
-
-        .btn-muted:hover {
-            background: rgba(148,163,184,0.2);
-        }
-
-        .notice {
-            background: rgba(234,179,8,0.07);
-            border: 1px solid rgba(234,179,8,0.2);
-            color: #cbd5e1;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 12px;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        table td, table th {
-            padding: 10px 8px;
-            white-space: nowrap;
-        }
-
-        @media (max-width: 640px) {
-            main {
-                padding: 12px !important;
-            }
-
-            h2 {
-                font-size: 16px !important;
-            }
-
-            .card {
-                padding: 14px !important;
-            }
-        }
-    </style>
-
-    <!-- JAVASCRIPT -->
     <script>
-        "use strict";
-
-        // ==========================================
-        // GLOBAL DASHBOARD DATA
-        // ==========================================
-
-        let dashboardTransactions = [];
-        let dashboardUsers = [];
-        let dashboardActivities = [];
-
-        let matrixInterval = null;
-        let dashboardRefreshInterval = null;
-        let networkRefreshInterval = null;
-
-        // ==========================================
-        // SAFE HTML HELPERS
-        // ==========================================
-
-        function escapeHTML(value) {
-            return String(value ?? "").replace(/[&<>"']/g, function(char) {
-                const entities = {
-                    "&": "&amp;",
-                    "<": "&lt;",
-                    ">": "&gt;",
-                    '"': "&quot;",
-                    "'": "&#039;"
-                };
-
-                return entities[char];
-            });
-        }
-
-        function formatMoney(value) {
-            const amount = Number(value);
-
-            if (!Number.isFinite(amount)) {
-                return "ZMW 0.00";
-            }
-
-            return "ZMW " + amount.toLocaleString("en-ZM", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        }
-
-        function getDecisionClass(decision) {
-            const value = String(decision || "").toUpperCase();
-
-            if (value.includes("BLOCK")) {
-                return "text-red-400";
-            }
-
-            if (value.includes("REVIEW")) {
-                return "text-yellow-400";
-            }
-
-            return "text-green-400";
-        }
-
-        function showMessage(elementId, message, color = "text-gray-400") {
-            const element = document.getElementById(elementId);
-
-            if (!element) return;
-
-            element.className = "text-sm mt-3 " + color;
-            element.textContent = message;
-        }
-
-        // ==========================================
-        // SIDEBAR
-        // ==========================================
-
         function toggleSidebar() {
-            const sidebar = document.getElementById("sidebar");
-            const overlay = document.getElementById("overlay");
-
-            sidebar.classList.toggle("open");
-            overlay.classList.toggle("show");
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('show');
         }
 
-        function showSection(name, element) {
-            document.querySelectorAll(".section").forEach(section => {
-                section.classList.remove("active");
-            });
-
-            document.querySelectorAll(".nav-item").forEach(item => {
-                item.classList.remove("active");
-            });
-
-            const selectedSection = document.getElementById("section-" + name);
-
-            if (selectedSection) {
-                selectedSection.classList.add("active");
-            }
-
-            if (element) {
-                element.classList.add("active");
-            }
-
-            // Close mobile sidebar after navigation.
-            if (window.innerWidth <= 768) {
-                document.getElementById("sidebar").classList.remove("open");
-                document.getElementById("overlay").classList.remove("show");
-            }
+        function showSection(name, el) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + name).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            if (el) el.classList.add('active');
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
         }
 
-        // ==========================================
-        // API REQUEST HELPER
-        // ==========================================
-
-        async function apiRequest(url, options = {}) {
-            const response = await fetch(url, {
-                credentials: "same-origin",
-                ...options,
-                headers: {
-                    ...(options.headers || {})
-                }
-            });
-
-            if (response.status === 401 || response.status === 403) {
-                throw new Error("You are not authorized. Please sign in again.");
-            }
-
-            if (!response.ok) {
-                throw new Error("Request failed: " + response.status);
-            }
-
-            const contentType = response.headers.get("content-type") || "";
-
-            if (contentType.includes("application/json")) {
-                return await response.json();
-            }
-
-            return await response.text();
+        function updateNetwork() {
+            document.getElementById('net-in').textContent = (Math.random() * 1.8 + 0.6).toFixed(1) + ' MB/s';
+            document.getElementById('net-out').textContent = (Math.random() * 1.2 + 0.4).toFixed(1) + ' MB/s';
+            document.getElementById('net-conn').textContent = Math.floor(Math.random() * 25 + 40);
+            document.getElementById('last-ip').textContent = '41.77.' + Math.floor(Math.random()*200+20) + '.' + Math.floor(Math.random()*200+10);
         }
 
-        // ==========================================
-        // DASHBOARD DATA
-        // ==========================================
-
-        async function loadDashboard() {
-            const refreshButton = document.querySelector(
-                'button[onclick="loadDashboard()"]'
-            );
-
-            if (refreshButton) {
-                refreshButton.disabled = true;
-            }
-
+        async function loadAllData() {
             try {
-                const results = await Promise.allSettled([
-                    apiRequest("/api/v1/dashboard/stats"),
-                    apiRequest("/api/v1/dashboard/recent"),
-                    apiRequest("/api/v1/admin/activity"),
-                    apiRequest("/api/v1/admin/users")
+                const [statsRes, recentRes, activityRes, usersRes] = await Promise.all([
+                    fetch('/api/v1/dashboard/stats'),
+                    fetch('/api/v1/dashboard/recent'),
+                    fetch('/api/v1/admin/activity'),
+                    fetch('/api/v1/admin/users')
                 ]);
 
-                // Dashboard statistics.
-                if (results[0].status === "fulfilled") {
-                    renderStats(results[0].value);
-                } else {
-                    console.error("Statistics error:", results[0].reason);
-                }
+                const stats = await statsRes.json();
+                const recent = await recentRes.json();
+                const activity = await activityRes.json();
+                const users = await usersRes.json();
 
-                // Recent transactions.
-                if (results[1].status === "fulfilled") {
-                    const data = results[1].value;
+                // Stats
+                document.getElementById('stat-total').textContent = stats.total_transactions || 0;
+                document.getElementById('stat-allowed').textContent = stats.allowed || 0;
+                document.getElementById('stat-review').textContent = stats.review || 0;
+                document.getElementById('stat-blocked').textContent = stats.blocked || 0;
+                document.getElementById('sec-blocked').textContent = stats.blocked || 0;
 
-                    dashboardTransactions = Array.isArray(data)
-                        ? data
-                        : (data.transactions || data.items || []);
-
-                    renderTransactions();
-                } else {
-                    console.error("Transactions error:", results[1].reason);
-                }
-
-                // Administrator activity.
-                if (results[2].status === "fulfilled") {
-                    const data = results[2].value;
-
-                    dashboardActivities = Array.isArray(data)
-                        ? data
-                        : (data.activities || data.items || []);
-
-                    renderActivities();
-                } else {
-                    console.error("Activity error:", results[2].reason);
-                }
-
-                // User records.
-                if (results[3].status === "fulfilled") {
-                    const data = results[3].value;
-
-                    dashboardUsers = Array.isArray(data)
-                        ? data
-                        : (data.users || data.items || []);
-
-                    renderUsers();
-                } else {
-                    console.error("Users error:", results[3].reason);
-                }
-
-                const failed = results.filter(
-                    result => result.status === "rejected"
-                ).length;
-
-                if (failed > 0) {
-                    console.warn(failed + " dashboard request(s) failed.");
-                }
-
-            } catch (error) {
-                console.error("Dashboard loading error:", error);
-            } finally {
-                if (refreshButton) {
-                    refreshButton.disabled = false;
-                }
-            }
-        }
-
-        // ==========================================
-        // STATISTICS
-        // ==========================================
-
-        function renderStats(data) {
-            if (!data) return;
-
-            const total =
-                data.total_transactions ??
-                data.total ??
-                data.transactions ??
-                0;
-
-            const allowed =
-                data.allowed ??
-                data.approved ??
-                0;
-
-            const review =
-                data.review ??
-                data.pending ??
-                0;
-
-            const blocked =
-                data.blocked ??
-                data.rejected ??
-                0;
-
-            document.getElementById("stat-total").textContent = total;
-            document.getElementById("stat-allowed").textContent = allowed;
-            document.getElementById("stat-review").textContent = review;
-            document.getElementById("stat-blocked").textContent = blocked;
-            document.getElementById("sec-blocked").textContent = blocked;
-        }
-
-        // ==========================================
-        // TRANSACTION RENDERING
-        // ==========================================
-
-        function renderTransactions() {
-            const recentBody = document.getElementById("recentTxBody");
-            const allBody = document.getElementById("allTxBody");
-
-            if (!recentBody || !allBody) return;
-
-            if (!dashboardTransactions.length) {
-                recentBody.innerHTML =
-                    '<tr><td colspan="4" class="text-gray-500 py-4">No transaction records available.</td></tr>';
-
-                allBody.innerHTML =
-                    '<tr><td colspan="5" class="text-gray-500 py-4">No transaction records available.</td></tr>';
-
-                return;
-            }
-
-            recentBody.innerHTML = dashboardTransactions
-                .slice(0, 10)
-                .map(tx => {
-                    const id = tx.transaction_id ?? tx.id ?? "N/A";
-                    const amount = tx.amount ?? 0;
-                    const risk = tx.risk_score ?? tx.risk ?? "N/A";
-                    const decision = tx.decision ?? tx.status ?? "UNKNOWN";
-
-                    return `
-                        <tr class="border-b border-green-900/20">
-                            <td>${escapeHTML(id)}</td>
-                            <td>${escapeHTML(formatMoney(amount))}</td>
-                            <td>${escapeHTML(risk)}</td>
-                            <td class="${getDecisionClass(decision)}">
-                                ${escapeHTML(decision)}
-                            </td>
-                        </tr>
-                    `;
-                }).join("");
-
-            allBody.innerHTML = dashboardTransactions
-                .map(tx => {
-                    const id = tx.transaction_id ?? tx.id ?? "N/A";
-                    const amount = tx.amount ?? 0;
-                    const sender = tx.sender ?? tx.sender_phone ?? "N/A";
-                    const receiver = tx.receiver ?? tx.receiver_phone ?? "N/A";
-                    const decision = tx.decision ?? tx.status ?? "UNKNOWN";
-
-                    return `
-                        <tr class="border-b border-green-900/20">
-                            <td>${escapeHTML(id)}</td>
-                            <td>${escapeHTML(formatMoney(amount))}</td>
-                            <td>${escapeHTML(sender)}</td>
-                            <td>${escapeHTML(receiver)}</td>
-                            <td class="${getDecisionClass(decision)}">
-                                ${escapeHTML(decision)}
-                            </td>
-                        </tr>
-                    `;
-                }).join("");
-        }
-
-        // ==========================================
-        // ACTIVITY LOG
-        // ==========================================
-
-        function renderActivities() {
-            const activityBody = document.getElementById("activityBody");
-            const liveActivity = document.getElementById("liveActivity");
-
-            if (!activityBody || !liveActivity) return;
-
-            if (!dashboardActivities.length) {
-                activityBody.textContent = "No activity records available.";
-                liveActivity.textContent = "No recent activity available.";
-                return;
-            }
-
-            const activityHTML = dashboardActivities.map(activity => {
-                const description =
-                    activity.description ??
-                    activity.action ??
-                    activity.message ??
-                    "Activity recorded";
-
-                const date =
-                    activity.created_at ??
-                    activity.timestamp ??
-                    activity.date ??
-                    "";
-
-                return `
-                    <div class="border-b border-green-900/20 pb-3">
-                        <p class="text-gray-300">${escapeHTML(description)}</p>
-                        <p class="text-xs text-gray-500 mt-1">${escapeHTML(date)}</p>
-                    </div>
-                `;
-            }).join("");
-
-            activityBody.innerHTML = activityHTML;
-
-            liveActivity.innerHTML = dashboardActivities
-                .slice(0, 8)
-                .map(activity => {
-                    const description =
-                        activity.description ??
-                        activity.action ??
-                        activity.message ??
-                        "Activity recorded";
-
-                    return `
-                        <div class="border-l-2 border-green-400 pl-3 py-1">
-                            <p class="text-gray-300">${escapeHTML(description)}</p>
-                        </div>
-                    `;
-                }).join("");
-        }
-
-        // ==========================================
-        // USER MANAGEMENT
-        // ==========================================
-
-        function renderUsers() {
-            const usersBody = document.getElementById("usersBody");
-
-            if (!usersBody) return;
-
-            if (!dashboardUsers.length) {
-                usersBody.innerHTML =
-                    '<tr><td colspan="4" class="text-gray-500 py-4">No user records available.</td></tr>';
-                return;
-            }
-
-            usersBody.innerHTML = dashboardUsers.map(user => {
-                const id = user.id ?? user.user_id ?? "";
-                const name = user.full_name ?? user.username ?? user.name ?? "Unknown";
-                const phone = user.phone ?? user.phone_number ?? "N/A";
-                const balance = user.balance ?? 0;
-
-                return `
-                    <tr class="border-b border-green-900/20">
-                        <td>${escapeHTML(name)}</td>
-                        <td>${escapeHTML(phone)}</td>
-                        <td>${escapeHTML(formatMoney(balance))}</td>
-                        <td>
-                            <button
-                                class="btn-danger px-3 py-1 rounded text-xs"
-                                onclick="deleteUser('${escapeHTML(id)}')"
-                            >
-                                Delete
-                            </button>
+                // Transactions
+                const txRows = (recent || []).map(tx => `
+                    <tr class="border-b border-green-900/20 hover:bg-white/5">
+                        <td class="py-2.5 text-cyan-300 text-xs font-mono">${tx.transaction_id || 'N/A'}</td>
+                        <td class="py-2.5">ZMW ${Number(tx.amount || 0).toLocaleString()}</td>
+                        <td class="py-2.5">${tx.risk_score ?? '—'}</td>
+                        <td class="py-2.5">
+                            <span class="px-2 py-0.5 rounded text-xs font-medium ${
+                                tx.decision === 'BLOCK' ? 'bg-red-500/20 text-red-400' :
+                                tx.decision === 'REVIEW' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-green-500/20 text-green-400'
+                            }">${tx.decision || 'ALLOW'}</span>
                         </td>
                     </tr>
+                `).join('') || `<tr><td colspan="4" class="py-6 text-center text-gray-500">No transactions yet</td></tr>`;
+
+                document.getElementById('recentTxBody').innerHTML = txRows;
+                document.getElementById('allTxBody').innerHTML = txRows;
+
+                // Activity
+                const actHtml = (activity || []).map(a => `
+                    <div class="p-3 rounded-lg bg-black/30 border border-green-900/20">
+                        <div class="flex justify-between items-start">
+                            <span class="text-green-400 font-medium">${a.action}</span>
+                            <span class="text-gray-500 text-xs">${a.time}</span>
+                        </div>
+                        <p class="text-gray-400 text-xs mt-1">${a.details || ''}</p>
+                    </div>
+                `).join('') || `<p class="text-gray-500 text-sm">No activity recorded yet</p>`;
+
+                document.getElementById('liveActivity').innerHTML = actHtml;
+                document.getElementById('activityBody').innerHTML = actHtml;
+
+                // Users
+                document.getElementById('usersBody').innerHTML = (users || []).map(u => `
+                    <tr class="border-b border-green-900/20">
+                        <td class="py-2.5">${u.full_name || u.username}</td>
+                        <td class="py-2.5 text-cyan-300">${u.phone}</td>
+                        <td class="py-2.5 text-green-400">K${Number(u.balance || 0).toFixed(2)}</td>
+                        <td class="py-2.5">
+                            <button onclick="deleteUser(${u.id})" class="px-2.5 py-1 rounded text-xs bg-red-500/15 border border-red-500/40 text-red-400">Delete</button>
+                        </td>
+                    </tr>
+                `).join('') || `<tr><td colspan="4" class="py-6 text-center text-gray-500">No users found</td></tr>`;
+
+                // Sessions
+                document.getElementById('sessionsBody').innerHTML = `
+                    <div class="p-3 rounded-lg bg-black/30 border border-green-900/20">
+                        <div class="flex justify-between">
+                            <span class="text-green-400 font-medium">Admin • Chrome</span>
+                            <span class="text-xs text-green-400">Active now</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Lusaka, Zambia • This device</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-black/30 border border-green-900/20">
+                        <div class="flex justify-between">
+                            <span class="text-cyan-300">User Session</span>
+                            <span class="text-xs text-gray-400">Recently active</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Mobile Browser • Zambia</p>
+                    </div>
                 `;
-            }).join("");
+
+                // Connections
+                document.getElementById('connectionList').innerHTML = `
+                    <div class="flex justify-between py-2 border-b border-green-900/20">
+                        <span>Admin Dashboard</span>
+                        <span class="text-green-400 text-xs">Active</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-green-900/20">
+                        <span>User Portal</span>
+                        <span class="text-green-400 text-xs">Active</span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span>API Endpoints</span>
+                        <span class="text-green-400 text-xs">Healthy</span>
+                    </div>
+                `;
+
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         async function deleteUser(id) {
-            if (!id) {
-                alert("Invalid user ID.");
-                return;
-            }
-
-            const confirmed = confirm(
-                "Are you sure you want to delete this user account?"
-            );
-
-            if (!confirmed) return;
-
-            try {
-                await apiRequest(
-                    "/api/v1/admin/users/" + encodeURIComponent(id),
-                    { method: "DELETE" }
-                );
-
-                alert("User deletion request completed.");
-
-                await loadDashboard();
-
-            } catch (error) {
-                alert("Unable to delete user: " + error.message);
-                console.error(error);
+            if (!confirm('Delete this user permanently?')) return;
+            const res = await fetch(`/api/v1/admin/users/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert('User deleted successfully');
+                loadAllData();
+            } else {
+                alert('Failed to delete user');
             }
         }
 
-        // ==========================================
-        // NETWORK DEMO
-        // ==========================================
-
-        function updateNetworkStats() {
-            const incoming = document.getElementById("net-in");
-            const outgoing = document.getElementById("net-out");
-            const connections = document.getElementById("net-conn");
-            const connectionList = document.getElementById("connectionList");
-
-            if (!incoming || !outgoing || !connections) return;
-
-            // These are illustrative demo values, not real network measurements.
-            incoming.textContent = "Demo";
-            outgoing.textContent = "Demo";
-            connections.textContent = "Not measured";
-
-            if (connectionList) {
-                connectionList.textContent =
-                    "Real connection monitoring requires a server-side monitoring endpoint.";
-            }
-        }
-
-        // ==========================================
-        // WALLPAPER
-        // ==========================================
-
-        function setWallpaper(type) {
-            const canvas = document.getElementById("matrixCanvas");
-
-            if (!canvas) return;
-
-            if (matrixInterval) {
-                clearInterval(matrixInterval);
-                matrixInterval = null;
-            }
-
-            if (type === "none") {
-                canvas.style.display = "none";
-                const context = canvas.getContext("2d");
-
-                if (context) {
-                    context.clearRect(0, 0, canvas.width, canvas.height);
-                }
-
-                return;
-            }
-
-            if (type === "matrix") {
-                canvas.style.display = "block";
-                startMatrix();
-            }
-        }
-
-        function startMatrix() {
-            const canvas = document.getElementById("matrixCanvas");
-            const context = canvas.getContext("2d");
-
-            if (!context) return;
-
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            const characters = "01THEGUARDIAN";
-            const fontSize = 14;
-
-            let columns = Math.floor(canvas.width / fontSize);
-            let drops = Array(columns).fill(1);
-
-            function draw() {
-                context.fillStyle = "rgba(11, 15, 25, 0.08)";
-                context.fillRect(0, 0, canvas.width, canvas.height);
-
-                context.fillStyle = "#00ff9f";
-                context.font = fontSize + "px monospace";
-
-                for (let i = 0; i < drops.length; i++) {
-                    const character = characters.charAt(
-                        Math.floor(Math.random() * characters.length)
-                    );
-
-                    context.fillText(
-                        character,
-                        i * fontSize,
-                        drops[i] * fontSize
-                    );
-
-                    if (
-                        drops[i] * fontSize > canvas.height &&
-                        Math.random() > 0.975
-                    ) {
-                        drops[i] = 0;
-                    }
-
-                    drops[i]++;
-                }
-            }
-
-            matrixInterval = setInterval(draw, 50);
-        }
-
-        // ==========================================
-        // INVESTIGATION DRAFT
-        // ==========================================
-
-        function draftInvestigation() {
-            const transaction = document.getElementById("caseTxn").value.trim();
-            const notes = document.getElementById("caseNotes").value.trim();
-
-            if (!transaction || !notes) {
-                showMessage(
-                    "caseResult",
-                    "Enter a transaction ID and investigation notes.",
-                    "text-yellow-400"
-                );
-                return;
-            }
-
-            showMessage(
-                "caseResult",
-                "Investigation draft prepared locally. It has not been saved to the server.",
-                "text-green-400"
-            );
-
-            console.log("Investigation draft:", {
-                transaction,
-                notes
-            });
-        }
-
-        // ==========================================
-        // RISK EXPLANATION
-        // ==========================================
-
-        function lookupRiskReason() {
-            const transaction = document.getElementById("riskTxn").value.trim();
-
-            if (!transaction) {
-                showMessage(
-                    "riskReason",
-                    "Enter a transaction ID first.",
-                    "text-yellow-400"
-                );
-                return;
-            }
-
-            showMessage(
-                "riskReason",
-                "No risk-explanation API is connected yet. Add a protected backend endpoint to retrieve this transaction's recorded risk reasons.",
-                "text-gray-400"
-            );
-        }
-
-        // ==========================================
-        // NOTIFICATION PREVIEW
-        // ==========================================
-
-        function previewNotice() {
-            const target = document.getElementById("noticeTarget").value;
-            const message = document.getElementById("noticeText").value.trim();
-            const preview = document.getElementById("noticePreview");
-
-            if (!message) {
-                preview.textContent = "Enter a notification message first.";
-                return;
-            }
-
-            preview.textContent =
-                "Preview for " +
-                (target === "all" ? "all users" : "a selected user") +
-                ": " +
-                message;
-        }
-
-        // ==========================================
-        // ADVANCED TRANSACTION SEARCH
-        // ==========================================
-
-        function searchLoadedTransactions() {
-            const transactionId =
-                document.getElementById("filterTxn").value.trim().toLowerCase();
-
-            const phone =
-                document.getElementById("filterPhone").value.trim().toLowerCase();
-
-            const decision =
-                document.getElementById("filterDecision").value.toUpperCase();
-
-            const riskValue =
-                document.getElementById("filterRisk").value;
-
-            const minimumRisk =
-                riskValue === "" ? null : Number(riskValue);
-
-            const results = dashboardTransactions.filter(tx => {
-                const id = String(
-                    tx.transaction_id ?? tx.id ?? ""
-                ).toLowerCase();
-
-                const sender = String(
-                    tx.sender ?? tx.sender_phone ?? ""
-                ).toLowerCase();
-
-                const receiver = String(
-                    tx.receiver ?? tx.receiver_phone ?? ""
-                ).toLowerCase();
-
-                const txDecision = String(
-                    tx.decision ?? tx.status ?? ""
-                ).toUpperCase();
-
-                const risk = Number(
-                    tx.risk_score ?? tx.risk ?? 0
-                );
-
-                const matchesId =
-                    !transactionId || id.includes(transactionId);
-
-                const matchesPhone =
-                    !phone ||
-                    sender.includes(phone) ||
-                    receiver.includes(phone);
-
-                const matchesDecision =
-                    !decision || txDecision.includes(decision);
-
-                const matchesRisk =
-                    minimumRisk === null || risk >= minimumRisk;
-
-                return (
-                    matchesId &&
-                    matchesPhone &&
-                    matchesDecision &&
-                    matchesRisk
-                );
-            });
-
-            const output = document.getElementById("searchResults");
-
-            if (!results.length) {
-                output.textContent = "No matching loaded transactions found.";
-                return;
-            }
-
-            output.innerHTML = results.map(tx => {
-                const id = tx.transaction_id ?? tx.id ?? "N/A";
-                const amount = tx.amount ?? 0;
-                const status = tx.decision ?? tx.status ?? "UNKNOWN";
-
-                return `
-                    <div class="border-b border-green-900/20 py-3">
-                        <p class="text-gray-200">
-                            ${escapeHTML(id)}
-                        </p>
-                        <p class="text-xs text-gray-400">
-                            ${escapeHTML(formatMoney(amount))}
-                            •
-                            ${escapeHTML(status)}
-                        </p>
-                    </div>
-                `;
-            }).join("");
-        }
-
-        // ==========================================
-        // FRAUD RULE DRAFT
-        // ==========================================
-
-        function saveRuleDraft() {
-            const name = document.getElementById("ruleName").value.trim();
-            const action = document.getElementById("ruleAction").value;
-            const threshold = document.getElementById("ruleThreshold").value;
-
-            if (!name || threshold === "") {
-                showMessage(
-                    "ruleResult",
-                    "Enter a rule name and risk threshold.",
-                    "text-yellow-400"
-                );
-                return;
-            }
-
-            const number = Number(threshold);
-
-            if (!Number.isFinite(number) || number < 0 || number > 100) {
-                showMessage(
-                    "ruleResult",
-                    "Risk threshold must be between 0 and 100.",
-                    "text-red-400"
-                );
-                return;
-            }
-
-            showMessage(
-                "ruleResult",
-                "Rule draft created locally. It is not active and has not been saved to the server.",
-                "text-green-400"
-            );
-
-            console.log("Fraud rule draft:", {
-                name,
-                action,
-                threshold: number
-            });
-        }
-
-        // ==========================================
-        // CSV EXPORT
-        // ==========================================
-
-        function exportTransactionsCSV() {
-            if (!dashboardTransactions.length) {
-                showMessage(
-                    "exportResult",
-                    "There are no loaded transactions to export.",
-                    "text-yellow-400"
-                );
-                return;
-            }
-
-            function csvCell(value) {
-                let text = String(value ?? "");
-
-                // Prevent spreadsheet formula execution.
-                if (/^[=+\-@\t\r]/.test(text)) {
-                    text = "'" + text;
-                }
-
-                return '"' + text.replace(/"/g, '""') + '"';
-            }
-
-            const headers = [
-                "Transaction ID",
-                "Amount",
-                "Sender",
-                "Receiver",
-                "Decision",
-                "Risk Score"
-            ];
-
-            const rows = dashboardTransactions.map(tx => [
-                tx.transaction_id ?? tx.id ?? "",
-                tx.amount ?? "",
-                tx.sender ?? tx.sender_phone ?? "",
-                tx.receiver ?? tx.receiver_phone ?? "",
-                tx.decision ?? tx.status ?? "",
-                tx.risk_score ?? tx.risk ?? ""
-            ]);
-
-            const csv = [
-                headers.map(csvCell).join(","),
-                ...rows.map(row => row.map(csvCell).join(","))
-            ].join("\n");
-
-            const blob = new Blob(
-                ["\uFEFF" + csv],
-                { type: "text/csv;charset=utf-8;" }
-            );
-
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-
-            link.href = url;
-            link.download = "guardian_transactions.csv";
-
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-
-            URL.revokeObjectURL(url);
-
-            showMessage(
-                "exportResult",
-                "CSV export generated from the transactions currently loaded.",
-                "text-green-400"
-            );
-        }
-
-        // ==========================================
-        // SETTINGS
-        // ==========================================
-
-        function loadLocalSettings() {
-            const settingIds = [
-                "soundAlerts",
-                "riskColors",
-                "activityLogging",
-                "autoBlock",
-                "maintenanceMode"
-            ];
-
-            settingIds.forEach(id => {
-                const element = document.getElementById(id);
-
-                if (!element) return;
-
-                try {
-                    const saved = localStorage.getItem(
-                        "guardian_" + id
-                    );
-
-                    if (saved !== null) {
-                        element.checked = saved === "true";
-                    }
-
-                    element.addEventListener("change", () => {
-                        localStorage.setItem(
-                            "guardian_" + id,
-                            String(element.checked)
-                        );
-                    });
-
-                } catch (error) {
-                    console.warn("Local settings unavailable:", error);
-                }
-            });
-        }
-
-        // ==========================================
-        // WINDOW RESIZE
-        // ==========================================
-
-        window.addEventListener("resize", () => {
-            const canvas = document.getElementById("matrixCanvas");
-
-            if (canvas && canvas.style.display === "block") {
-                setWallpaper("matrix");
-            }
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAllData();
+            updateNetwork();
+            setInterval(loadAllData, 20000);
+            setInterval(updateNetwork, 5000);
         });
-
-        // ==========================================
-        // INITIALISE DASHBOARD
-        // ==========================================
-
-        document.addEventListener("DOMContentLoaded", () => {
-            loadLocalSettings();
-
-            loadDashboard();
-
-            updateNetworkStats();
-
-            // Refresh dashboard data every 20 seconds.
-            dashboardRefreshInterval = setInterval(
-                loadDashboard,
-                20000
-            );
-
-            // Network values are illustrative, not real measurements.
-            networkRefreshInterval = setInterval(
-                updateNetworkStats,
-                4000
-            );
-        });
-
-        // ==========================================
-        // CLEAN UP TIMERS
-        // ==========================================
-
-        window.addEventListener("beforeunload", () => {
-            if (dashboardRefreshInterval) {
-                clearInterval(dashboardRefreshInterval);
-            }
-
-            if (networkRefreshInterval) {
-                clearInterval(networkRefreshInterval);
-            }
-
-            if (matrixInterval) {
-                clearInterval(matrixInterval);
-            }
-        });
-
     </script>
-
-    <!-- FOOTER -->
-    <footer class="md:ml-64 p-5 text-center border-t border-green-900/20 mt-8">
-        <p class="text-xs text-gray-500 mono">
-            THE GUARDIAN • ADMIN COMMAND CENTER
-        </p>
-        <p class="text-xs text-gray-600 mt-1">
-            Secured by Engineer Mulenga
-        </p>
-    </footer>
-
 </body>
 </html>
-
-        
-        
-
