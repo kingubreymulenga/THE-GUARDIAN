@@ -1,62 +1,288 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean
-from sqlalchemy.sql import func
+from datetime import datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Index,
+)
+
 from backend.app.db.database import Base
 
 
-class Transaction(Base):
-    __tablename__ = "transactions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    transaction_id = Column(String(50), unique=True, index=True, nullable=False)
-    amount = Column(Float, nullable=False)
-    currency = Column(String(10), default="ZMW")
-    sender_msisdn = Column(String(20), index=True)
-    receiver_msisdn = Column(String(20), index=True)
-    transaction_type = Column(String(50))
-    channel = Column(String(50))
-    location = Column(String(100))
-    device_id = Column(String(100))
-    risk_score = Column(Float)
-    risk_level = Column(String(20))
-    decision = Column(String(20))
-    recommendation = Column(Text)
-    factors = Column(Text)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    processed_at = Column(DateTime(timezone=True), server_default=func.now())
-
-
 class User(Base):
+    """
+    Guardian user account and mobile wallet profile.
+    """
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(50), unique=True, index=True, nullable=False)
-    full_name = Column(String(100))
+
+    username = Column(
+        String(100),
+        unique=True,
+        index=True,
+        nullable=False
+    )
+
+    full_name = Column(String(150), nullable=True)
+
     password = Column(String(255), nullable=False)
-    phone = Column(String(20))
-    email = Column(String(100), nullable=True)
-    balance = Column(Float, default=0.0)
-    is_active = Column(Boolean, default=True)
-    last_login = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    phone = Column(
+        String(20),
+        unique=True,
+        index=True,
+        nullable=True
+    )
+
+    email = Column(
+        String(150),
+        unique=True,
+        index=True,
+        nullable=True
+    )
+
+    balance = Column(
+        Float,
+        default=0.0,
+        nullable=False
+    )
+
+    is_active = Column(
+        Boolean,
+        default=True,
+        nullable=False
+    )
+
+    last_login = Column(DateTime, nullable=True)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+
+class Transaction(Base):
+    """
+    Stores transactions analyzed by THE GUARDIAN.
+    """
+
+    __tablename__ = "transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    transaction_id = Column(
+        String(100),
+        unique=True,
+        index=True,
+        nullable=False
+    )
+
+    amount = Column(Float, nullable=False)
+
+    currency = Column(
+        String(3),
+        default="ZMW",
+        nullable=False
+    )
+
+    sender_msisdn = Column(
+        String(20),
+        index=True,
+        nullable=False
+    )
+
+    receiver_msisdn = Column(
+        String(20),
+        index=True,
+        nullable=False
+    )
+
+    transaction_type = Column(
+        String(50),
+        default="TRANSFER",
+        nullable=False
+    )
+
+    channel = Column(
+        String(50),
+        default="mobile_money",
+        nullable=False
+    )
+
+    location = Column(String(255), nullable=True)
+
+    location_lat = Column(Float, nullable=True)
+
+    location_lon = Column(Float, nullable=True)
+
+    device_id = Column(String(255), nullable=True)
+
+    risk_score = Column(
+        Float,
+        default=0.0,
+        nullable=False
+    )
+
+    risk_level = Column(
+        String(30),
+        default="LOW",
+        nullable=False
+    )
+
+    decision = Column(
+        String(20),
+        default="ALLOW",
+        nullable=False
+    )
+
+    recommendation = Column(Text, nullable=True)
+
+    factors = Column(Text, nullable=True)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    processed_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+
+Index(
+    "ix_transactions_sender_created",
+    Transaction.sender_msisdn,
+    Transaction.created_at
+)
 
 
 class Report(Base):
+    """
+    Suspicious transaction reports submitted by users.
+    """
+
     __tablename__ = "reports"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_phone = Column(String(20), index=True)
-    transaction_id = Column(String(50), nullable=True)
-    reason = Column(String(100))
-    description = Column(Text)
-    status = Column(String(30), default="Pending")
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user_phone = Column(
+        String(20),
+        index=True,
+        nullable=False
+    )
+
+    transaction_id = Column(
+        String(100),
+        index=True,
+        nullable=False
+    )
+
+    reason = Column(
+        String(255),
+        nullable=False
+    )
+
+    description = Column(Text, nullable=True)
+
+    status = Column(
+        String(30),
+        default="PENDING",
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
 
 
 class ActivityLog(Base):
+    """
+    Records important user and administrator activities.
+    """
+
     __tablename__ = "activity_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_phone = Column(String(20), nullable=True)
-    action = Column(String(100))          # e.g. "New Account Created", "User Login"
+
+    user_phone = Column(
+        String(50),
+        index=True,
+        nullable=True
+    )
+
+    action = Column(
+        String(100),
+        nullable=False
+    )
+
     details = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+
+class InvestigationCase(Base):
+    """
+    Investigation records for suspicious transactions.
+    """
+
+    __tablename__ = "investigation_cases"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    transaction_id = Column(
+        String(100),
+        index=True,
+        nullable=False
+    )
+
+    assigned_to = Column(
+        String(100),
+        nullable=True
+    )
+
+    status = Column(
+        String(30),
+        default="OPEN",
+        nullable=False
+    )
+
+    priority = Column(
+        String(30),
+        default="MEDIUM",
+        nullable=False
+    )
+
+    findings = Column(Text, nullable=True)
+
+    resolution = Column(Text, nullable=True)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
