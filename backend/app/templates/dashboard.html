@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 
 <html lang="en">
@@ -8,7 +10,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>VELTRIX AML // THE GUARDIAN</title>
+<title>THE-GUARDIAN | Admin Command Center</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -29,8 +31,6 @@
  --bg:#050912;
 
  --panel:#0b1422;
-
- --panel2:#0e1a2b;
 
  --line:rgba(76,201,240,.16);
 
@@ -56,13 +56,55 @@ body{
 
  color:#e6edf7;
 
- font-family:Inter,sans-serif
+ font-family:Inter,sans-serif;
+
+ overflow-x:hidden;
 
 }
 
 .mono{font-family:'JetBrains Mono',monospace}
 
-.sidebar{background:#07101c;border-right:1px solid var(--line)}
+#matrixCanvas{
+
+ position:fixed;
+
+ inset:0;
+
+ width:100%;
+
+ height:100%;
+
+ z-index:0;
+
+ pointer-events:none;
+
+ opacity:.16;
+
+ display:none;
+
+}
+
+body.matrix-on #matrixCanvas{display:block}
+
+#app{
+
+ position:relative;
+
+ z-index:1;
+
+}
+
+.sidebar{
+
+ background:rgba(7,16,28,.97);
+
+ border-right:1px solid var(--line);
+
+ backdrop-filter:blur(15px);
+
+ transition:width .25s ease,left .25s ease;
+
+}
 
 .panel{
 
@@ -72,7 +114,7 @@ body{
 
  border-radius:14px;
 
- box-shadow:0 10px 30px #0002
+ box-shadow:0 10px 30px #0002;
 
 }
 
@@ -86,7 +128,7 @@ body{
 
  padding:17px;
 
- min-height:112px
+ min-height:112px;
 
 }
 
@@ -100,7 +142,7 @@ body{
 
  font-weight:800;
 
- padding:17px 12px 7px
+ padding:17px 12px 7px;
 
 }
 
@@ -112,7 +154,7 @@ body{
 
  gap:12px;
 
- padding:10px 12px;
+ padding:12px;
 
  border-radius:9px;
 
@@ -122,7 +164,11 @@ body{
 
  cursor:pointer;
 
- transition:.18s
+ transition:.18s;
+
+ margin-bottom:3px;
+
+ white-space:nowrap;
 
 }
 
@@ -130,11 +176,15 @@ body{
 
  background:rgba(57,213,246,.1);
 
- color:var(--cyan)
+ color:var(--cyan);
 
 }
 
-.nav-item.active{box-shadow:inset 2px 0 var(--cyan)}
+.nav-item.active{
+
+ box-shadow:inset 3px 0 var(--cyan);
+
+}
 
 .section{display:none}
 
@@ -158,7 +208,7 @@ body{
 
  border:1px solid var(--line);
 
- color:#9eb0c6
+ color:#9eb0c6;
 
 }
 
@@ -174,7 +224,7 @@ body{
 
  background:var(--green);
 
- box-shadow:0 0 9px currentColor
+ box-shadow:0 0 9px var(--green);
 
 }
 
@@ -190,7 +240,9 @@ body{
 
  color:#b8c8da;
 
- background:#0c1b2b
+ background:#0c1b2b;
+
+ cursor:pointer;
 
 }
 
@@ -202,7 +254,7 @@ body{
 
  border-color:#087e88;
 
- color:#73edee
+ color:#73edee;
 
 }
 
@@ -220,7 +272,7 @@ body{
 
  outline:none;
 
- font-size:12px
+ font-size:12px;
 
 }
 
@@ -236,7 +288,7 @@ table{
 
  white-space:nowrap;
 
- font-size:12px
+ font-size:12px;
 
 }
 
@@ -254,7 +306,7 @@ th{
 
  padding:11px 9px;
 
- border-bottom:1px solid var(--line)
+ border-bottom:1px solid var(--line);
 
 }
 
@@ -264,7 +316,7 @@ td{
 
  border-bottom:1px solid rgba(76,201,240,.08);
 
- color:#c4d0df
+ color:#c4d0df;
 
 }
 
@@ -280,7 +332,7 @@ tr:hover td{background:#ffffff05}
 
  font-size:10px;
 
- font-weight:700
+ font-weight:700;
 
 }
 
@@ -300,7 +352,7 @@ tr:hover td{background:#ffffff05}
 
  background:#081525;
 
- z-index:1
+ z-index:1;
 
 }
 
@@ -336,7 +388,7 @@ tr:hover td{background:#ffffff05}
 
  font-size:12px;
 
- display:none
+ display:none;
 
 }
 
@@ -350,7 +402,7 @@ tr:hover td{background:#ffffff05}
 
  padding:18px;
 
- text-align:center
+ text-align:center;
 
 }
 
@@ -364,7 +416,7 @@ tr:hover td{background:#ffffff05}
 
  border-radius:10px;
 
- min-height:90px
+ min-height:90px;
 
 }
 
@@ -374,7 +426,7 @@ tr:hover td{background:#ffffff05}
 
  font-size:15px;
 
- margin-bottom:9px
+ margin-bottom:9px;
 
 }
 
@@ -388,9 +440,197 @@ tr:hover td{background:#ffffff05}
 
  margin-top:4px;
 
- line-height:1.5
+ line-height:1.5;
 
 }
+
+.matrix-toggle{
+
+ display:flex;
+
+ align-items:center;
+
+ gap:9px;
+
+ cursor:pointer;
+
+ font-size:11px;
+
+ color:#9aabc0;
+
+}
+
+.switch{
+
+ width:34px;
+
+ height:18px;
+
+ border-radius:20px;
+
+ background:#344357;
+
+ position:relative;
+
+ transition:.2s;
+
+}
+
+.switch:after{
+
+ content:'';
+
+ position:absolute;
+
+ width:12px;
+
+ height:12px;
+
+ left:3px;
+
+ top:3px;
+
+ background:white;
+
+ border-radius:50%;
+
+ transition:.2s;
+
+}
+
+.matrix-toggle input{display:none}
+
+.matrix-toggle input:checked + .switch{
+
+ background:#008d6b;
+
+}
+
+.matrix-toggle input:checked + .switch:after{
+
+ transform:translateX(16px);
+
+}
+
+.welcome{
+
+ color:#dceaf7;
+
+ font-size:12px;
+
+}
+
+footer{
+
+ border-top:1px solid var(--line);
+
+}
+
+/* DESKTOP COLLAPSIBLE SIDEBAR */
+
+@media(min-width:801px){
+
+ .sidebar{
+
+  width:270px;
+
+  left:0;
+
+  top:0;
+
+  bottom:0;
+
+  position:fixed;
+
+  z-index:50;
+
+  overflow-y:auto;
+
+  overflow-x:hidden;
+
+ }
+
+ .sidebar.collapsed{width:75px}
+
+ .main{
+
+  margin-left:270px;
+
+  width:calc(100% - 270px);
+
+  transition:margin-left .25s ease,width .25s ease;
+
+ }
+
+ .main.expanded{
+
+  margin-left:75px;
+
+  width:calc(100% - 75px);
+
+ }
+
+ .sidebar.collapsed .brand-text,
+
+ .sidebar.collapsed .nav-group,
+
+ .sidebar.collapsed .nav-label,
+
+ .sidebar.collapsed .sidebar-footer-text,
+
+ .sidebar.collapsed .environment-text,
+
+ .sidebar.collapsed .matrix-label{
+
+  display:none!important;
+
+ }
+
+ .sidebar.collapsed .nav-item{
+
+  justify-content:center;
+
+  padding:14px 5px;
+
+  font-size:0;
+
+ }
+
+ .sidebar.collapsed .nav-item i{
+
+  font-size:18px;
+
+  width:auto;
+
+ }
+
+ .sidebar.collapsed .brand{
+
+  justify-content:center;
+
+ }
+
+ .sidebar.collapsed .environment{
+
+  justify-content:center;
+
+ }
+
+ .sidebar.collapsed .matrix-toggle{
+
+  justify-content:center;
+
+ }
+
+ .sidebar.collapsed .matrix-toggle .switch{
+
+  display:none;
+
+ }
+
+}
+
+/* MOBILE */
 
 @media(max-width:800px){
 
@@ -408,11 +648,21 @@ tr:hover td{background:#ffffff05}
 
   z-index:50;
 
-  transition:.25s
+  overflow-y:auto;
 
  }
 
  .sidebar.open{left:0}
+
+ .main{
+
+  margin-left:0!important;
+
+  width:100%!important;
+
+  padding:14px!important;
+
+ }
 
  .overlay{
 
@@ -424,21 +674,15 @@ tr:hover td{background:#ffffff05}
 
   background:#000a;
 
-  z-index:40
+  z-index:40;
 
  }
 
  .overlay.show{display:block}
 
- .main{
-
-  margin-left:0!important;
-
-  padding:14px!important
-
- }
-
  #threatMap{height:300px}
+
+ .welcome{font-size:11px}
 
 }
 
@@ -448,11 +692,15 @@ tr:hover td{background:#ffffff05}
 
 <body>
 
+<canvas id="matrixCanvas"></canvas>
+
+<div id="app">
+
 <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
 
-<aside id="sidebar" class="sidebar fixed inset-y-0 left-0 w-[270px] p-4 flex flex-col">
+<aside id="sidebar" class="sidebar p-4 flex flex-col">
 
- <div class="flex items-center gap-3 px-2 py-3 mb-3">
+ <div class="brand flex items-center gap-3 px-2 py-3 mb-3">
 
   <div class="w-10 h-10 rounded-xl flex items-center justify-center"
 
@@ -462,43 +710,47 @@ tr:hover td{background:#ffffff05}
 
   </div>
 
-  <div>
+  <div class="brand-text">
 
-   <div class="font-extrabold tracking-wider text-white">
+   <div class="font-extrabold tracking-wider text-white text-lg">
 
-    VELTRIX <span style="color:var(--cyan)">AML</span>
+    THE-GUARDIAN
 
    </div>
 
-   <div class="text-[10px] tracking-widest muted">THE GUARDIAN PLATFORM</div>
+   <div class="text-[10px] tracking-widest muted">FRAUD INTELLIGENCE SYSTEM</div>
 
   </div>
 
  </div>
 
- <div class="px-3 py-2 mb-3 rounded-lg text-[10px] mono"
+ <div class="environment px-3 py-3 mb-3 rounded-lg text-[10px] mono flex justify-between items-center"
 
       style="background:#091b29;border:1px solid var(--line)">
 
-  <span class="status-dot mr-2"></span>
+  <span class="flex items-center gap-2">
 
-  COMMAND ENVIRONMENT
+   <span class="status-dot"></span>
 
-  <span class="float-right" style="color:var(--green)">ONLINE*</span>
+   <span class="environment-text">COMMAND ENVIRONMENT</span>
+
+  </span>
+
+  <span class="environment-text" style="color:var(--green)">ONLINE*</span>
 
  </div>
 
- <nav class="flex-1 overflow-y-auto">
+ <nav class="flex-1">
 
   <div class="nav-group">COMMAND</div>
 
   <div class="nav-item active" data-section="executive"
 
-       onclick="showSection('executive',this)">
+       onclick="showSection('executive')">
 
    <i class="fa-solid fa-gauge-high w-4"></i>
 
-   Executive Command
+   <span class="nav-label">Executive Command</span>
 
   </div>
 
@@ -506,33 +758,33 @@ tr:hover td{background:#ffffff05}
 
   <div class="nav-item" data-section="threat"
 
-       onclick="showSection('threat',this)">
+       onclick="showSection('threat')">
 
    <i class="fa-solid fa-earth-africa w-4"></i>
 
-   Global Threat Intelligence
+   <span class="nav-label">Global Threat Intelligence</span>
 
   </div>
 
   <div class="nav-item" data-section="alerts"
 
-       onclick="showSection('alerts',this)">
+       onclick="showSection('alerts')">
 
    <i class="fa-solid fa-triangle-exclamation w-4"></i>
 
-   Alerts & Investigation
+   <span class="nav-label">Alerts & Investigation</span>
 
-   <span id="alertNavCount" class="ml-auto tag">—</span>
+   <span id="alertNavCount" class="tag ml-auto nav-label">—</span>
 
   </div>
 
   <div class="nav-item" data-section="analytics"
 
-       onclick="showSection('analytics',this)">
+       onclick="showSection('analytics')">
 
    <i class="fa-solid fa-chart-line w-4"></i>
 
-   Advanced Analytics
+   <span class="nav-label">Advanced Analytics</span>
 
   </div>
 
@@ -540,71 +792,71 @@ tr:hover td{background:#ffffff05}
 
   <div class="nav-item" data-section="transactions"
 
-       onclick="showSection('transactions',this)">
+       onclick="showSection('transactions')">
 
    <i class="fa-solid fa-arrow-right-arrow-left w-4"></i>
 
-   Transactions
+   <span class="nav-label">Transactions</span>
 
   </div>
 
   <div class="nav-item" data-section="users"
 
-       onclick="showSection('users',this)">
+       onclick="showSection('users')">
 
    <i class="fa-solid fa-users w-4"></i>
 
-   User Management
+   <span class="nav-label">User Management</span>
 
   </div>
 
   <div class="nav-item" data-section="activity"
 
-       onclick="showSection('activity',this)">
+       onclick="showSection('activity')">
 
    <i class="fa-solid fa-clock-rotate-left w-4"></i>
 
-   Activity Audit Log
+   <span class="nav-label">Activity Audit Log</span>
 
   </div>
 
   <div class="nav-item" data-section="sessions"
 
-       onclick="showSection('sessions',this)">
+       onclick="showSection('sessions')">
 
    <i class="fa-solid fa-laptop w-4"></i>
 
-   Active Sessions
+   <span class="nav-label">Active Sessions</span>
 
   </div>
 
   <div class="nav-item" data-section="network"
 
-       onclick="showSection('network',this)">
+       onclick="showSection('network')">
 
    <i class="fa-solid fa-network-wired w-4"></i>
 
-   Network Monitor
+   <span class="nav-label">Network Monitor</span>
 
   </div>
 
   <div class="nav-item" data-section="security"
 
-       onclick="showSection('security',this)">
+       onclick="showSection('security')">
 
    <i class="fa-solid fa-shield-virus w-4"></i>
 
-   Security Posture
+   <span class="nav-label">Security Posture</span>
 
   </div>
 
   <div class="nav-item" data-section="system"
 
-       onclick="showSection('system',this)">
+       onclick="showSection('system')">
 
    <i class="fa-solid fa-sliders w-4"></i>
 
-   System Settings
+   <span class="nav-label">System Settings</span>
 
   </div>
 
@@ -612,19 +864,29 @@ tr:hover td{background:#ffffff05}
 
  <div class="border-t pt-3 mt-3" style="border-color:var(--line)">
 
+  <label class="matrix-toggle px-3 py-3">
+
+   <input type="checkbox" id="matrixToggle" onchange="toggleMatrix(this.checked)">
+
+   <span class="switch"></span>
+
+   <span class="matrix-label">Matrix Live Wallpaper</span>
+
+  </label>
+
   <a href="/logout" class="nav-item" style="color:var(--red)">
 
    <i class="fa-solid fa-right-from-bracket w-4"></i>
 
-   Sign out
+   <span class="nav-label">Sign out</span>
 
   </a>
 
-  <p class="px-3 mt-2 text-[9px] muted">
+  <p class="sidebar-footer-text px-3 mt-3 text-[10px] muted leading-relaxed">
 
-   THE GUARDIAN • ZAMBIA<br>
+   THE-GUARDIAN • ZAMBIA<br>
 
-   VELTRIX AML INTERFACE
+   FRAUD DETECTION PLATFORM
 
   </p>
 
@@ -632,13 +894,13 @@ tr:hover td{background:#ffffff05}
 
 </aside>
 
-<main class="main ml-[270px] p-6">
+<main class="main p-6">
 
  <header class="flex flex-wrap items-center justify-between gap-3 mb-6">
 
   <div class="flex items-center gap-3">
 
-   <button class="btn md:hidden" onclick="toggleSidebar()">
+   <button class="btn" onclick="toggleSidebar()" aria-label="Toggle menu">
 
     <i class="fa-solid fa-bars"></i>
 
@@ -648,7 +910,7 @@ tr:hover td{background:#ffffff05}
 
     <div class="text-[10px] tracking-[.2em] muted font-bold">
 
-     FINANCIAL CRIME INTELLIGENCE / ZM
+     THE-GUARDIAN / ZAMBIA
 
     </div>
 
@@ -658,11 +920,7 @@ tr:hover td{background:#ffffff05}
 
     </h1>
 
-    <p class="text-xs muted mt-1">
-
-     THE GUARDIAN • VELTRIX AML operational environment
-
-    </p>
+    <p class="welcome mt-1">Welcome Administrator Mulenga</p>
 
    </div>
 
@@ -712,15 +970,9 @@ tr:hover td{background:#ffffff05}
 
     <div class="text-[10px] muted tracking-wider">ALLOWED</div>
 
-    <div id="stat-allowed" class="text-3xl font-extrabold mt-2"
+    <div id="stat-allowed" class="text-3xl font-extrabold mt-2" style="color:var(--green)">—</div>
 
-         style="color:var(--green)">—</div>
-
-    <div id="allowedPct" class="text-[10px] muted mt-2">
-
-     Decision distribution
-
-    </div>
+    <div id="allowedPct" class="text-[10px] muted mt-2">Decision distribution</div>
 
    </div>
 
@@ -728,15 +980,9 @@ tr:hover td{background:#ffffff05}
 
     <div class="text-[10px] muted tracking-wider">PENDING REVIEW</div>
 
-    <div id="stat-review" class="text-3xl font-extrabold mt-2"
+    <div id="stat-review" class="text-3xl font-extrabold mt-2" style="color:var(--amber)">—</div>
 
-         style="color:var(--amber)">—</div>
-
-    <div class="text-[10px] muted mt-2">
-
-     Transactions requiring review
-
-    </div>
+    <div class="text-[10px] muted mt-2">Transactions requiring review</div>
 
    </div>
 
@@ -744,15 +990,9 @@ tr:hover td{background:#ffffff05}
 
     <div class="text-[10px] muted tracking-wider">BLOCKED</div>
 
-    <div id="stat-blocked" class="text-3xl font-extrabold mt-2"
+    <div id="stat-blocked" class="text-3xl font-extrabold mt-2" style="color:var(--red)">—</div>
 
-         style="color:var(--red)">—</div>
-
-    <div id="blockedPct" class="text-[10px] muted mt-2">
-
-     Fraud engine decisions
-
-    </div>
+    <div id="blockedPct" class="text-[10px] muted mt-2">Fraud engine decisions</div>
 
    </div>
 
@@ -768,11 +1008,7 @@ tr:hover td{background:#ffffff05}
 
       <h3 class="font-bold text-sm">Executive Transaction Pulse</h3>
 
-      <p class="text-[10px] muted mt-1">
-
-       Four command indicators • database-backed
-
-      </p>
+      <p class="text-[10px] muted mt-1">Four command indicators • database-backed</p>
 
      </div>
 
@@ -788,7 +1024,7 @@ tr:hover td{background:#ffffff05}
 
       <h4>Transaction Volume</h4>
 
-      <p>All transactions persisted in THE GUARDIAN database.</p>
+      <p>Transactions persisted in THE-GUARDIAN database.</p>
 
      </div>
 
@@ -808,7 +1044,7 @@ tr:hover td{background:#ffffff05}
 
       <h4>Customer Base</h4>
 
-      <p><b id="userCountFeature">—</b> registered user records.</p>
+      <p><b id="userCountFeature">—</b> registered users.</p>
 
      </div>
 
@@ -848,11 +1084,7 @@ tr:hover td{background:#ffffff05}
 
     <h3 class="font-bold text-sm">Recent Transaction Command Feed</h3>
 
-    <button class="btn" onclick="showSection('transactions')">
-
-     Open transaction desk <i class="fa-solid fa-arrow-right ml-1"></i>
-
-    </button>
+    <button class="btn" onclick="showSection('transactions')">Open transaction desk →</button>
 
    </div>
 
@@ -864,19 +1096,9 @@ tr:hover td{background:#ffffff05}
 
       <tr>
 
-       <th>TRANSACTION ID</th>
+       <th>TRANSACTION ID</th><th>AMOUNT</th><th>SENDER</th>
 
-       <th>AMOUNT</th>
-
-       <th>SENDER</th>
-
-       <th>RECEIVER</th>
-
-       <th>RISK SCORE</th>
-
-       <th>DECISION</th>
-
-       <th>TIME</th>
+       <th>RECEIVER</th><th>RISK SCORE</th><th>DECISION</th><th>TIME</th>
 
       </tr>
 
@@ -910,11 +1132,7 @@ tr:hover td{background:#ffffff05}
 
       <h3 class="font-bold text-sm">Geospatial Threat Intelligence Map</h3>
 
-      <p class="text-[10px] muted mt-1">
-
-       Only transactions with stored latitude/longitude can be plotted
-
-      </p>
+      <p class="text-[10px] muted mt-1">Only transactions with stored latitude/longitude can be plotted</p>
 
      </div>
 
@@ -926,11 +1144,11 @@ tr:hover td{background:#ffffff05}
 
     <div class="flex flex-wrap gap-4 text-[10px] muted mt-3">
 
-     <span><i class="fa-solid fa-circle mr-1" style="color:var(--green)"></i>ALLOW</span>
+     <span style="color:var(--green)">● ALLOW</span>
 
-     <span><i class="fa-solid fa-circle mr-1" style="color:var(--amber)"></i>REVIEW</span>
+     <span style="color:var(--amber)">● REVIEW</span>
 
-     <span><i class="fa-solid fa-circle mr-1" style="color:var(--red)"></i>BLOCK</span>
+     <span style="color:var(--red)">● BLOCK</span>
 
      <span id="mapCount" class="ml-auto">0 geolocated events</span>
 
@@ -942,11 +1160,7 @@ tr:hover td{background:#ffffff05}
 
     <h3 class="font-bold text-sm mb-1">Live Activity Stream</h3>
 
-    <p class="text-[10px] muted mb-3">
-
-     Latest persisted audit events • FEATURE 02 / 04
-
-    </p>
+    <p class="text-[10px] muted mb-3">Persisted audit events • FEATURE 02 / 04</p>
 
     <div id="liveActivity" class="space-y-2 max-h-[355px] overflow-y-auto">
 
@@ -970,13 +1184,7 @@ tr:hover td{background:#ffffff05}
 
     </div>
 
-    <p class="text-[10px] muted mt-1 mb-3">
-
-     Location values recorded with transaction events
-
-    </p>
-
-    <div id="originList" class="space-y-2">
+    <div id="originList" class="space-y-2 mt-3">
 
      <div class="loading">Waiting for location data…</div>
 
@@ -994,13 +1202,7 @@ tr:hover td{background:#ffffff05}
 
     </div>
 
-    <p class="text-[10px] muted mt-1 mb-3">
-
-     Risk decisions from the fraud engine
-
-    </p>
-
-    <div id="threatSignals" class="space-y-3"></div>
+    <div id="threatSignals" class="space-y-3 mt-4"></div>
 
    </div>
 
@@ -1018,9 +1220,7 @@ tr:hover td{background:#ffffff05}
 
     <div class="text-[10px] muted">BLOCK DECISIONS</div>
 
-    <div id="alertBlocked" class="text-2xl font-bold mt-2"
-
-         style="color:var(--red)">—</div>
+    <div id="alertBlocked" class="text-2xl font-bold mt-2" style="color:var(--red)">—</div>
 
    </div>
 
@@ -1028,9 +1228,7 @@ tr:hover td{background:#ffffff05}
 
     <div class="text-[10px] muted">REVIEW QUEUE</div>
 
-    <div id="alertReview" class="text-2xl font-bold mt-2"
-
-         style="color:var(--amber)">—</div>
+    <div id="alertReview" class="text-2xl font-bold mt-2" style="color:var(--amber)">—</div>
 
    </div>
 
@@ -1060,13 +1258,7 @@ tr:hover td{background:#ffffff05}
 
     <h4>Automated Risk Alerts <span class="tag ml-2">01 / 04</span></h4>
 
-    <p>
-
-     Review and block decisions surfaced from the fraud engine.
-
-     These are alerts, not independently verified criminal findings.
-
-    </p>
+    <p>Review and block decisions from the fraud engine.</p>
 
    </div>
 
@@ -1076,13 +1268,7 @@ tr:hover td{background:#ffffff05}
 
     <h4>Transaction Investigation <span class="tag ml-2">02 / 04</span></h4>
 
-    <p>
-
-     Inspect sender, receiver, amount, risk score, decision and
-
-     recorded risk factors.
-
-    </p>
+    <p>Inspect sender, receiver, amount, risk score and recorded factors.</p>
 
    </div>
 
@@ -1090,15 +1276,9 @@ tr:hover td{background:#ffffff05}
 
     <i class="ico fa-solid fa-file-circle-exclamation"></i>
 
-    <h4>Customer-Submitted Reports <span class="tag ml-2">03 / 04</span></h4>
+    <h4>Customer Reports <span class="tag ml-2">03 / 04</span></h4>
 
-    <p>
-
-     Existing suspicious-transaction reports require an admin reports
-
-     endpoint to display and action them.
-
-    </p>
+    <p>Customer-submitted suspicious transaction reports need an admin reports API.</p>
 
    </div>
 
@@ -1106,15 +1286,9 @@ tr:hover td{background:#ffffff05}
 
     <i class="ico fa-solid fa-folder-open"></i>
 
-    <h4>Investigation Case Management <span class="tag ml-2">04 / 04</span></h4>
+    <h4>Investigation Cases <span class="tag ml-2">04 / 04</span></h4>
 
-    <p>
-
-     Case assignment, notes, status transitions and evidence history
-
-     require case-management APIs.
-
-    </p>
+    <p>Case assignment, notes and evidence history need backend support.</p>
 
    </div>
 
@@ -1128,11 +1302,7 @@ tr:hover td{background:#ffffff05}
 
      <h3 class="font-bold text-sm">Alert Queue</h3>
 
-     <p class="text-[10px] muted">
-
-      Live REVIEW and BLOCK transactions from existing database records
-
-     </p>
+     <p class="text-[10px] muted">Live REVIEW and BLOCK transaction records</p>
 
     </div>
 
@@ -1154,23 +1324,7 @@ tr:hover td{background:#ffffff05}
 
      <thead>
 
-      <tr>
-
-       <th>TXN ID</th>
-
-       <th>AMOUNT</th>
-
-       <th>PARTIES</th>
-
-       <th>RISK</th>
-
-       <th>DECISION</th>
-
-       <th>TIME</th>
-
-       <th>DETAIL</th>
-
-      </tr>
+      <tr><th>TXN ID</th><th>AMOUNT</th><th>PARTIES</th><th>RISK</th><th>DECISION</th><th>TIME</th><th>DETAIL</th></tr>
 
      </thead>
 
@@ -1188,13 +1342,11 @@ tr:hover td{background:#ffffff05}
 
   <div class="panel p-4">
 
-   <h3 class="font-bold text-sm mb-2">Investigation workspace connectivity</h3>
+   <h3 class="font-bold text-sm mb-2">Investigation Workspace</h3>
 
    <div id="investigationStatus" class="text-xs muted">
 
     Case and report APIs have not yet been connected.
-
-    Existing fraud alerts are displayed above.
 
    </div>
 
@@ -1218,11 +1370,11 @@ tr:hover td{background:#ffffff05}
 
    <div class="metric">
 
-    <div class="text-[10px] muted">TOTAL TX VALUE</div>
+    <div class="text-[10px] muted">LOADED TX VALUE</div>
 
     <div id="analyticsValue" class="text-2xl font-bold mt-2">—</div>
 
-    <div class="text-[10px] muted">Sum of recorded transaction amounts</div>
+    <div class="text-[10px] muted">Loaded transaction records</div>
 
    </div>
 
@@ -1256,11 +1408,7 @@ tr:hover td{background:#ffffff05}
 
     </div>
 
-    <div class="chart-box mt-2">
-
-     <canvas id="analyticsDecisionChart"></canvas>
-
-    </div>
+    <div class="chart-box mt-2"><canvas id="analyticsDecisionChart"></canvas></div>
 
    </div>
 
@@ -1274,11 +1422,7 @@ tr:hover td{background:#ffffff05}
 
     </div>
 
-    <div class="chart-box mt-2">
-
-     <canvas id="amountChart"></canvas>
-
-    </div>
+    <div class="chart-box mt-2"><canvas id="amountChart"></canvas></div>
 
    </div>
 
@@ -1292,11 +1436,7 @@ tr:hover td{background:#ffffff05}
 
     </div>
 
-    <div class="chart-box mt-2">
-
-     <canvas id="riskChart"></canvas>
-
-    </div>
+    <div class="chart-box mt-2"><canvas id="riskChart"></canvas></div>
 
    </div>
 
@@ -1328,11 +1468,7 @@ tr:hover td{background:#ffffff05}
 
      <h3 class="font-bold text-sm">Compliance Data Export</h3>
 
-     <p class="text-[10px] muted mt-1">
-
-      FEATURE 05 / 05 • Export currently loaded transaction records
-
-     </p>
+     <p class="text-[10px] muted mt-1">FEATURE 05 / 05 • Export loaded transaction records</p>
 
     </div>
 
@@ -1346,11 +1482,7 @@ tr:hover td{background:#ffffff05}
 
    <p class="text-[10px] muted mt-3">
 
-    This export contains records returned by the current transaction
-
-    endpoint. It is not a regulatory filing or a substitute for a
-
-    verified AML compliance report.
+    This is a data export, not a regulatory filing or verified AML report.
 
    </p>
 
@@ -1358,7 +1490,7 @@ tr:hover td{background:#ffffff05}
 
  </section>
 
- <!-- EXISTING GUARDIAN FEATURES -->
+ <!-- TRANSACTIONS -->
 
  <section id="section-transactions" class="section">
 
@@ -1370,15 +1502,11 @@ tr:hover td{background:#ffffff05}
 
      <h3 class="font-bold text-sm">Transaction Management</h3>
 
-     <p class="text-[10px] muted">Existing THE GUARDIAN transaction records</p>
+     <p class="text-[10px] muted">THE-GUARDIAN transaction records</p>
 
     </div>
 
-    <input id="txSearch" class="field"
-
-           placeholder="Search ID / phone…"
-
-           oninput="renderTransactions()">
+    <input id="txSearch" class="field" placeholder="Search ID / phone…" oninput="renderTransactions()">
 
    </div>
 
@@ -1388,23 +1516,7 @@ tr:hover td{background:#ffffff05}
 
      <thead>
 
-      <tr>
-
-       <th>TXN ID</th>
-
-       <th>AMOUNT</th>
-
-       <th>SENDER</th>
-
-       <th>RECEIVER</th>
-
-       <th>RISK</th>
-
-       <th>DECISION</th>
-
-       <th>TIME</th>
-
-      </tr>
+      <tr><th>TXN ID</th><th>AMOUNT</th><th>SENDER</th><th>RECEIVER</th><th>RISK</th><th>DECISION</th><th>TIME</th></tr>
 
      </thead>
 
@@ -1418,6 +1530,8 @@ tr:hover td{background:#ffffff05}
 
  </section>
 
+ <!-- USERS -->
+
  <section id="section-users" class="section">
 
   <div class="panel p-4">
@@ -1428,15 +1542,11 @@ tr:hover td{background:#ffffff05}
 
      <h3 class="font-bold text-sm">Customer & User Management</h3>
 
-     <p class="text-[10px] muted">Existing registered accounts</p>
+     <p class="text-[10px] muted">Registered accounts</p>
 
     </div>
 
-    <input id="userSearch" class="field"
-
-           placeholder="Search name / phone…"
-
-           oninput="renderUsers()">
+    <input id="userSearch" class="field" placeholder="Search name / phone…" oninput="renderUsers()">
 
    </div>
 
@@ -1446,23 +1556,7 @@ tr:hover td{background:#ffffff05}
 
      <thead>
 
-      <tr>
-
-       <th>NAME</th>
-
-       <th>PHONE</th>
-
-       <th>EMAIL</th>
-
-       <th>BALANCE</th>
-
-       <th>STATUS</th>
-
-       <th>LAST LOGIN</th>
-
-       <th>ACTION</th>
-
-      </tr>
+      <tr><th>NAME</th><th>PHONE</th><th>EMAIL</th><th>BALANCE</th><th>STATUS</th><th>LAST LOGIN</th><th>ACTION</th></tr>
 
      </thead>
 
@@ -1476,6 +1570,8 @@ tr:hover td{background:#ffffff05}
 
  </section>
 
+ <!-- ACTIVITY -->
+
  <section id="section-activity" class="section">
 
   <div class="panel p-4">
@@ -1488,6 +1584,8 @@ tr:hover td{background:#ffffff05}
 
  </section>
 
+ <!-- SESSIONS -->
+
  <section id="section-sessions" class="section">
 
   <div class="panel p-4">
@@ -1496,11 +1594,9 @@ tr:hover td{background:#ffffff05}
 
    <p class="text-xs muted mt-2">
 
-    Your current backend stores session cookies but does not maintain
+    The current backend uses session cookies but does not maintain a server-side session registry.
 
-    a server-side session registry. A genuine cross-user session list
-
-    is unavailable until session tracking is added.
+    A genuine cross-user session list requires session tracking.
 
    </p>
 
@@ -1509,6 +1605,8 @@ tr:hover td{background:#ffffff05}
   </div>
 
  </section>
+
+ <!-- NETWORK -->
 
  <section id="section-network" class="section">
 
@@ -1520,9 +1618,7 @@ tr:hover td{background:#ffffff05}
 
     <p class="text-xs muted mt-2">
 
-     Live bandwidth and connection counts are not exposed by the
-
-     current FastAPI application. No synthetic measurements are displayed.
+     Live bandwidth and connection counts are not exposed by the current FastAPI application.
 
     </p>
 
@@ -1536,11 +1632,7 @@ tr:hover td{background:#ffffff05}
 
     <p class="text-xs muted mt-2">
 
-     The current transaction API does not return verified source IP
-
-     geolocation. The map only plots stored coordinates when supplied
-
-     by the backend.
+     The map plots stored coordinates only when returned by the backend.
 
     </p>
 
@@ -1552,17 +1644,15 @@ tr:hover td{background:#ffffff05}
 
   <div class="panel p-4 mt-3">
 
-   <h3 class="font-bold text-sm">Service connectivity</h3>
+   <h3 class="font-bold text-sm">Service Connectivity</h3>
 
-   <div id="connectionList" class="mt-3 text-xs muted">
-
-    Checking API availability…
-
-   </div>
+   <div id="connectionList" class="mt-3 text-xs muted">Checking API availability…</div>
 
   </div>
 
  </section>
+
+ <!-- SECURITY -->
 
  <section id="section-security" class="section">
 
@@ -1576,9 +1666,7 @@ tr:hover td{background:#ffffff05}
 
     <p class="text-xs muted mt-2">
 
-     A defensible score needs measured controls and security events.
-
-     The old hardcoded 92/100 has been removed.
+     A defensible score requires measured security controls and events.
 
     </p>
 
@@ -1588,9 +1676,7 @@ tr:hover td{background:#ffffff05}
 
     <div class="text-xs muted">Blocked transactions</div>
 
-    <div id="sec-blocked" class="text-3xl font-bold mt-2"
-
-         style="color:var(--red)">—</div>
+    <div id="sec-blocked" class="text-3xl font-bold mt-2" style="color:var(--red)">—</div>
 
     <p class="text-xs muted mt-2">Fraud-engine BLOCK decisions</p>
 
@@ -1600,9 +1686,7 @@ tr:hover td{background:#ffffff05}
 
     <div class="text-xs muted">Review queue</div>
 
-    <div id="sec-review" class="text-3xl font-bold mt-2"
-
-         style="color:var(--amber)">—</div>
+    <div id="sec-review" class="text-3xl font-bold mt-2" style="color:var(--amber)">—</div>
 
     <p class="text-xs muted mt-2">Transactions requiring review</p>
 
@@ -1612,6 +1696,8 @@ tr:hover td{background:#ffffff05}
 
  </section>
 
+ <!-- SETTINGS -->
+
  <section id="section-system" class="section">
 
   <div class="panel p-5 max-w-3xl">
@@ -1620,11 +1706,9 @@ tr:hover td{background:#ffffff05}
 
    <p class="text-xs muted mt-2">
 
-    Your existing backend reads fraud thresholds from application
+    Fraud thresholds are controlled by your backend settings.
 
-    settings. These controls are read-only here until secure admin
-
-    settings endpoints are implemented.
+    These controls are read-only until secure admin settings endpoints are implemented.
 
    </p>
 
@@ -1632,7 +1716,7 @@ tr:hover td{background:#ffffff05}
 
     <div class="feature-card">
 
-     <h4>Fraud detection engine</h4>
+     <h4>Fraud Detection Engine</h4>
 
      <p>Existing detector service connected through transaction analysis.</p>
 
@@ -1640,7 +1724,7 @@ tr:hover td{background:#ffffff05}
 
     <div class="feature-card">
 
-     <h4>Audit logging</h4>
+     <h4>Audit Logging</h4>
 
      <p>Existing ActivityLog records displayed in the audit section.</p>
 
@@ -1648,17 +1732,17 @@ tr:hover td{background:#ffffff05}
 
     <div class="feature-card">
 
-     <h4>Auto-block policy</h4>
+     <h4>Auto-block Policy</h4>
 
-     <p>Decision behaviour is controlled by the configured fraud detector thresholds.</p>
+     <p>Decision behaviour is controlled by fraud detector thresholds.</p>
 
     </div>
 
     <div class="feature-card">
 
-     <h4>Maintenance mode</h4>
+     <h4>Maintenance Mode</h4>
 
-     <p>Not available until a backend setting and transaction guard are added.</p>
+     <p>Requires a backend setting and transaction guard.</p>
 
     </div>
 
@@ -1668,19 +1752,31 @@ tr:hover td{background:#ffffff05}
 
  </section>
 
- <footer class="text-center text-[10px] muted py-8">
+ <footer class="text-center text-[11px] muted py-7 mt-8">
 
-  VELTRIX AML COMMAND CENTER • POWERED BY THE GUARDIAN • ZAMBIA
+  <div class="font-bold tracking-widest text-sm mb-2">THE-GUARDIAN</div>
+
+  <div>Intelligent Fraud Detection & Financial Security</div>
+
+  <div class="mt-3" style="color:var(--cyan)">
+
+   SECURED BY AUBREY MULENGA
+
+  </div>
+
+  <div class="mt-2 text-[9px]">ZAMBIA • THE-GUARDIAN PLATFORM</div>
 
  </footer>
 
 </main>
 
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
 
-const state = {
+const state={
 
  stats:null,
 
@@ -1696,69 +1792,39 @@ const state = {
 
  charts:{},
 
- api:{},
-
- reports:[]
+ api:{}
 
 };
 
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
 
-function toast(message,kind='info'){
+/* SIDEBAR CONTROL */
 
- const el=$('toast');
+function toggleSidebar(){
 
- el.textContent=message;
+ const sidebar=$('sidebar');
 
- el.style.borderColor=kind==='error'?'#a83a52':'#26718b';
+ const overlay=$('overlay');
 
- el.classList.add('show');
+ const main=document.querySelector('.main');
 
- clearTimeout(toast.timer);
+ if(window.innerWidth<=800){
 
- toast.timer=setTimeout(()=>el.classList.remove('show'),3600);
+  sidebar.classList.toggle('open');
 
-}
+  overlay.classList.toggle('show');
 
-function safeText(value){
+ }else{
 
- return String(value??'').replace(/[&<>"']/g,c=>({
+  sidebar.classList.toggle('collapsed');
 
-  '&':'&amp;',
+  main.classList.toggle('expanded');
 
-  '<':'&lt;',
-
-  '>':'&gt;',
-
-  '"':'&quot;',
-
-  "'":'&#39;'
-
- }[c]));
+ }
 
 }
 
-function fmtMoney(v){
-
- return 'ZMW '+Number(v||0).toLocaleString('en-ZM',{
-
-  minimumFractionDigits:2,
-
-  maximumFractionDigits:2
-
- });
-
-}
-
-function decisionPill(d){
-
- const v=String(d||'ALLOW').toUpperCase();
-
- return `<span class="pill ${v==='BLOCK'?'block':v==='REVIEW'?'review':'allow'}">${safeText(v)}</span>`;
-
-}
-
-function showSection(name,el){
+function showSection(name){
 
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
 
@@ -1770,7 +1836,7 @@ function showSection(name,el){
 
  });
 
- $('pageTitle').textContent=({
+ const titles={
 
   executive:'Executive Command',
 
@@ -1794,27 +1860,221 @@ function showSection(name,el){
 
   system:'System Settings'
 
- })[name]||name;
+ };
 
- if(name==='threat')setTimeout(initMap,100);
+ $('pageTitle').textContent=titles[name]||name;
 
- $('sidebar').classList.remove('open');
+ if(name==='threat'){
 
- $('overlay').classList.remove('show');
+  setTimeout(()=>{
+
+   initMap();
+
+   state.map?.invalidateSize();
+
+  },150);
+
+ }
+
+ if(window.innerWidth<=800){
+
+  $('sidebar').classList.remove('open');
+
+  $('overlay').classList.remove('show');
+
+ }
 
 }
 
-function toggleSidebar(){
+/* MATRIX LIVE WALLPAPER */
 
- $('sidebar').classList.toggle('open');
+let matrixAnimation=null;
 
- $('overlay').classList.toggle('show');
+function toggleMatrix(enabled){
+
+ document.body.classList.toggle('matrix-on',enabled);
+
+ if(enabled){
+
+  startMatrix();
+
+  toast('Matrix live wallpaper enabled.');
+
+ }else{
+
+  stopMatrix();
+
+  toast('Matrix live wallpaper disabled.');
+
+ }
 
 }
+
+function startMatrix(){
+
+ const canvas=$('matrixCanvas');
+
+ const ctx=canvas.getContext('2d');
+
+ if(matrixAnimation)cancelAnimationFrame(matrixAnimation);
+
+ let width=window.innerWidth;
+
+ let height=window.innerHeight;
+
+ canvas.width=width;
+
+ canvas.height=height;
+
+ const fontSize=15;
+
+ let columns=Math.ceil(width/fontSize);
+
+ let drops=Array(columns).fill(1);
+
+ const characters='アカサタナハマヤラワ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+ function draw(){
+
+  if(!document.body.classList.contains('matrix-on'))return;
+
+  ctx.fillStyle='rgba(5,9,18,0.08)';
+
+  ctx.fillRect(0,0,width,height);
+
+  ctx.fillStyle='#00e6a0';
+
+  ctx.font=fontSize+'px monospace';
+
+  for(let i=0;i<drops.length;i++){
+
+   const char=characters.charAt(Math.floor(Math.random()*characters.length));
+
+   ctx.fillText(char,i*fontSize,drops[i]*fontSize);
+
+   if(drops[i]*fontSize>height&&Math.random()>.975){
+
+    drops[i]=0;
+
+   }
+
+   drops[i]++;
+
+  }
+
+  matrixAnimation=requestAnimationFrame(draw);
+
+ }
+
+ draw();
+
+}
+
+function stopMatrix(){
+
+ if(matrixAnimation){
+
+  cancelAnimationFrame(matrixAnimation);
+
+  matrixAnimation=null;
+
+ }
+
+ const canvas=$('matrixCanvas');
+
+ const ctx=canvas.getContext('2d');
+
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+
+}
+
+window.addEventListener('resize',()=>{
+
+ if(document.body.classList.contains('matrix-on')){
+
+  startMatrix();
+
+ }
+
+});
+
+/* NOTIFICATIONS */
+
+function toast(message,kind='info'){
+
+ const el=$('toast');
+
+ el.textContent=message;
+
+ el.style.borderColor=kind==='error'?'#a83a52':'#26718b';
+
+ el.classList.add('show');
+
+ clearTimeout(toast.timer);
+
+ toast.timer=setTimeout(()=>{
+
+  el.classList.remove('show');
+
+ },3600);
+
+}
+
+/* SAFE TEXT */
+
+function safeText(value){
+
+ return String(value??'').replace(/[&<>"']/g,c=>({
+
+  '&':'&amp;',
+
+  '<':'&lt;',
+
+  '>':'&gt;',
+
+  '"':'&quot;',
+
+  "'":'&#39;'
+
+ }[c]));
+
+}
+
+function fmtMoney(value){
+
+ return 'ZMW '+Number(value||0).toLocaleString('en-ZM',{
+
+  minimumFractionDigits:2,
+
+  maximumFractionDigits:2
+
+ });
+
+}
+
+function decisionPill(decision){
+
+ const value=String(decision||'ALLOW').toUpperCase();
+
+ const cls=value==='BLOCK'
+
+  ?'block'
+
+  :value==='REVIEW'
+
+   ?'review'
+
+   :'allow';
+
+ return `<span class="pill ${cls}">${safeText(value)}</span>`;
+
+}
+
+/* API CONNECTION */
 
 async function apiGet(url){
 
- const r=await fetch(url,{
+ const response=await fetch(url,{
 
   credentials:'same-origin',
 
@@ -1822,17 +2082,23 @@ async function apiGet(url){
 
  });
 
- if(r.status===401||r.status===403){
+ if(response.status===401||response.status===403){
 
-  throw new Error('Admin access denied. Sign in again with an administrator account.');
+  throw new Error('Admin access denied. Sign in again.');
 
  }
 
- if(!r.ok)throw new Error(`${url} returned HTTP ${r.status}`);
+ if(!response.ok){
 
- return r.json();
+  throw new Error(`${url} returned HTTP ${response.status}`);
+
+ }
+
+ return response.json();
 
 }
+
+/* LOAD DASHBOARD DATA */
 
 async function loadAllData(){
 
@@ -1854,15 +2120,15 @@ async function loadAllData(){
 
  const results=await Promise.all(
 
-  endpoints.map(async([k,u])=>{
+  endpoints.map(async([key,url])=>{
 
    try{
 
-    return [k,await apiGet(u),true];
+    return [key,await apiGet(url),true];
 
-   }catch(e){
+   }catch(error){
 
-    return [k,e.message,false];
+    return [key,error.message,false];
 
    }
 
@@ -1872,17 +2138,17 @@ async function loadAllData(){
 
  let good=0;
 
- for(const [k,v,ok] of results){
+ for(const [key,value,ok] of results){
 
-  state.api[k]=ok;
+  state.api[key]=ok;
 
   if(ok){
 
-   state[k==='recent'?'transactions':k]=v;
+   state[key==='recent'?'transactions':key]=value;
 
    good++;
 
-  }else if(k==='stats'){
+  }else if(key==='stats'){
 
    state.stats=null;
 
@@ -1892,13 +2158,11 @@ async function loadAllData(){
 
  if(state.api.stats){
 
-  state.stats=state.stats||{};
-
   renderStats();
 
  }else{
 
-  toast('Dashboard statistics could not be loaded. Check admin authentication and backend.','error');
+  toast('Dashboard statistics could not be loaded. Check backend authentication.','error');
 
  }
 
@@ -1932,15 +2196,15 @@ async function loadAllData(){
 
  $('lastUpdated').textContent='UPDATED '+new Date().toLocaleTimeString();
 
- $('connectionList').innerHTML=endpoints.map(([k,u])=>`
+ $('connectionList').innerHTML=endpoints.map(([key])=>`
 
   <div class="flex justify-between py-2 border-b" style="border-color:var(--line)">
 
-   <span>${safeText(k.toUpperCase())}</span>
+   <span>${safeText(key.toUpperCase())}</span>
 
-   <span style="color:${state.api[k]?'var(--green)':'var(--red)'}">
+   <span style="color:${state.api[key]?'var(--green)':'var(--red)'}">
 
-    ${state.api[k]?'CONNECTED':'UNAVAILABLE'}
+    ${state.api[key]?'CONNECTED':'UNAVAILABLE'}
 
    </span>
 
@@ -1950,11 +2214,13 @@ async function loadAllData(){
 
 }
 
+/* STATISTICS */
+
 function renderStats(){
 
  const s=state.stats||{};
 
- for(const [id,key] of [
+ const fields=[
 
   ['stat-total','total_transactions'],
 
@@ -1972,11 +2238,13 @@ function renderStats(){
 
   ['alertReview','review']
 
- ]){
+ ];
+
+ fields.forEach(([id,key])=>{
 
   $(id).textContent=Number(s[key]||0).toLocaleString();
 
- }
+ });
 
  $('allowedPct').textContent=`${s.allowed_percentage??0}% of recorded decisions`;
 
@@ -1990,49 +2258,27 @@ function renderStats(){
 
 }
 
-function txRow(tx,alert=false){
+/* TRANSACTIONS */
 
- const risk=Number(tx.risk_score??0);
+function txRow(tx){
 
  return `
 
   <tr>
 
-   <td class="mono" style="color:var(--cyan)">
-
-    ${safeText(tx.transaction_id||'N/A')}
-
-   </td>
+   <td class="mono" style="color:var(--cyan)">${safeText(tx.transaction_id||'N/A')}</td>
 
    <td>${fmtMoney(tx.amount)}</td>
 
-   ${alert?'':`
+   <td>${safeText(tx.sender||'—')}</td>
 
-    <td>${safeText(tx.sender||'—')}</td>
+   <td>${safeText(tx.receiver||'—')}</td>
 
-    <td>${safeText(tx.receiver||'—')}</td>
-
-   `}
-
-   <td>${risk.toFixed(2)}</td>
+   <td>${Number(tx.risk_score??0).toFixed(2)}</td>
 
    <td>${decisionPill(tx.decision)}</td>
 
    <td>${safeText(tx.time||'—')}</td>
-
-   ${alert?`
-
-    <td>
-
-     <button class="btn" onclick="inspectTransaction('${encodeURIComponent(String(tx.transaction_id||''))}')">
-
-      Inspect
-
-     </button>
-
-    </td>
-
-   `:''}
 
   </tr>
 
@@ -2044,49 +2290,29 @@ function renderTransactions(){
 
  const list=state.transactions||[];
 
- const recent=list.slice(0,10);
+ $('recentTxBody').innerHTML=list.length
 
- $('recentTxBody').innerHTML=recent.length
-
-  ?recent.map(t=>`
-
-   <tr>
-
-    <td class="mono" style="color:var(--cyan)">${safeText(t.transaction_id||'N/A')}</td>
-
-    <td>${fmtMoney(t.amount)}</td>
-
-    <td>${safeText(t.sender||'—')}</td>
-
-    <td>${safeText(t.receiver||'—')}</td>
-
-    <td>${Number(t.risk_score||0).toFixed(2)}</td>
-
-    <td>${decisionPill(t.decision)}</td>
-
-    <td>${safeText(t.time||'—')}</td>
-
-   </tr>
-
-  `).join('')
+  ?list.slice(0,10).map(txRow).join('')
 
   :'<tr><td colspan="7" class="loading">No transaction records returned.</td></tr>';
 
- const q=($('txSearch')?.value||'').toLowerCase();
+ const query=($('txSearch')?.value||'').toLowerCase();
 
  const filtered=list.filter(t=>
 
-  [t.transaction_id,t.sender,t.receiver].join(' ').toLowerCase().includes(q)
+  [t.transaction_id,t.sender,t.receiver].join(' ').toLowerCase().includes(query)
 
  );
 
  $('allTxBody').innerHTML=filtered.length
 
-  ?filtered.map(t=>txRow(t)).join('')
+  ?filtered.map(txRow).join('')
 
   :'<tr><td colspan="7" class="loading">No matching transactions.</td></tr>';
 
 }
+
+/* ACTIVITY */
 
 function renderActivity(){
 
@@ -2140,6 +2366,8 @@ function renderActivity(){
 
 }
 
+/* USERS */
+
 function renderUsers(){
 
  const list=state.users||[];
@@ -2148,11 +2376,11 @@ function renderUsers(){
 
  $('analyticsUsers').textContent=list.length;
 
- const q=($('userSearch')?.value||'').toLowerCase();
+ const query=($('userSearch')?.value||'').toLowerCase();
 
  const filtered=list.filter(u=>
 
-  [u.full_name,u.username,u.phone,u.email].join(' ').toLowerCase().includes(q)
+  [u.full_name,u.username,u.phone,u.email].join(' ').toLowerCase().includes(query)
 
  );
 
@@ -2170,25 +2398,17 @@ function renderUsers(){
 
     <td>${fmtMoney(u.balance)}</td>
 
-    <td>
+    <td>${u.is_active
 
-     ${u.is_active
+     ?'<span class="pill allow">ACTIVE</span>'
 
-      ?'<span class="pill allow">ACTIVE</span>'
-
-      :'<span class="pill block">INACTIVE</span>'}
-
-    </td>
+     :'<span class="pill block">INACTIVE</span>'}</td>
 
     <td>${safeText(u.last_login||'Never')}</td>
 
     <td>
 
-     <button class="btn" onclick="deleteUser(${Number(u.id)})" style="color:var(--red)">
-
-      Delete
-
-     </button>
+     <button class="btn" onclick="deleteUser(${Number(u.id)})" style="color:var(--red)">Delete</button>
 
     </td>
 
@@ -2200,39 +2420,19 @@ function renderUsers(){
 
  $('customerInsights').innerHTML=`
 
-  <div class="flex justify-between">
+  <div class="flex justify-between"><span class="muted text-xs">Registered users</span><b>${list.length}</b></div>
 
-   <span class="muted text-xs">Registered users</span>
+  <div class="flex justify-between"><span class="muted text-xs">Active accounts</span><b>${list.filter(u=>u.is_active).length}</b></div>
 
-   <b>${list.length}</b>
+  <div class="flex justify-between"><span class="muted text-xs">Inactive accounts</span><b>${list.filter(u=>!u.is_active).length}</b></div>
 
-  </div>
-
-  <div class="flex justify-between">
-
-   <span class="muted text-xs">Active accounts</span>
-
-   <b>${list.filter(u=>u.is_active).length}</b>
-
-  </div>
-
-  <div class="flex justify-between">
-
-   <span class="muted text-xs">Inactive accounts</span>
-
-   <b>${list.filter(u=>!u.is_active).length}</b>
-
-  </div>
-
-  <div class="text-[10px] muted mt-3">
-
-   Based on current user records returned by the API.
-
-  </div>
+  <div class="text-[10px] muted mt-3">Based on user records returned by the API.</div>
 
  `;
 
 }
+
+/* ALERTS */
 
 function renderAlerts(){
 
@@ -2244,11 +2444,11 @@ function renderAlerts(){
 
  $('alertNavCount').textContent=list.length;
 
- const f=$('alertFilter')?.value||'ALL';
+ const filter=$('alertFilter')?.value||'ALL';
 
  const filtered=list.filter(t=>
 
-  f==='ALL'||String(t.decision).toUpperCase()===f
+  filter==='ALL'||String(t.decision).toUpperCase()===filter
 
  );
 
@@ -2272,11 +2472,7 @@ function renderAlerts(){
 
     <td>
 
-     <button class="btn" onclick="inspectTransaction('${encodeURIComponent(String(t.transaction_id||''))}')">
-
-      Inspect
-
-     </button>
+     <button class="btn" onclick="inspectTransaction('${encodeURIComponent(String(t.transaction_id||''))}')">Inspect</button>
 
     </td>
 
@@ -2288,7 +2484,7 @@ function renderAlerts(){
 
  $('investigationStatus').textContent=
 
-  'Existing transaction alerts are available. Case assignment, investigation notes and report disposition require additional backend endpoints.';
+  'Existing transaction alerts are available. Case assignment, investigation notes and report disposition require backend endpoints.';
 
  $('reportCount').textContent='API REQUIRED';
 
@@ -2298,21 +2494,17 @@ function inspectTransaction(encoded){
 
  const id=decodeURIComponent(encoded);
 
- const t=state.transactions.find(x=>x.transaction_id===id);
+ const tx=state.transactions.find(t=>String(t.transaction_id)===id);
 
- if(!t){
-
-  return toast('Transaction record is no longer in the loaded data.','error');
-
- }
+ if(!tx)return toast('Transaction not found.','error');
 
  toast(
 
-  `TXN ${t.transaction_id} | ${t.decision} | Risk ${t.risk_score} | ${fmtMoney(t.amount)} | ${t.sender||'—'} → ${t.receiver||'—'}`
+  `TXN ${tx.transaction_id} | ${tx.decision} | Risk ${tx.risk_score} | ${fmtMoney(tx.amount)} | ${tx.sender||'—'} → ${tx.receiver||'—'}`
 
- );
+);
 
-}
+/* DELETE USER */
 
 async function deleteUser(id){
 
@@ -2320,7 +2512,7 @@ async function deleteUser(id){
 
  try{
 
-  const r=await fetch(`/api/v1/admin/users/${id}`,{
+  const response=await fetch(`/api/v1/admin/users/${id}`,{
 
    method:'DELETE',
 
@@ -2328,197 +2520,21 @@ async function deleteUser(id){
 
   });
 
-  if(!r.ok)throw new Error(`HTTP ${r.status}`);
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
 
   toast('User deletion request completed.');
 
   await loadAllData();
 
- }catch(e){
+ }catch(error){
 
-  toast('User deletion failed: '+e.message,'error');
+  toast('User deletion failed: '+error.message,'error');
 
  }
 
 }
 
-function drawDecisionCharts(){
-
- const s=state.stats||{};
-
- const vals=[
-
-  Number(s.allowed||0),
-
-  Number(s.review||0),
-
-  Number(s.blocked||0)
-
- ];
-
- [['decisionChart','doughnut'],['analyticsDecisionChart','bar']].forEach(([id,type])=>{
-
-  const c=$(id);
-
-  if(!c)return;
-
-  state.charts[id]?.destroy();
-
-  state.charts[id]=new Chart(c,{
-
-   type,
-
-   data:{
-
-    labels:['ALLOW','REVIEW','BLOCK'],
-
-    datasets:[{
-
-     data:vals,
-
-     backgroundColor:['#00c995','#f5bd4f','#ff5470'],
-
-     borderColor:'#0b1422',
-
-     borderWidth:2
-
-    }]
-
-   },
-
-   options:{
-
-    responsive:true,
-
-    maintainAspectRatio:false,
-
-    plugins:{
-
-     legend:{
-
-      labels:{
-
-       color:'#9aabc0',
-
-       font:{size:10}
-
-      }
-
-     }
-
-    },
-
-    scales:type==='bar'?{
-
-     x:{ticks:{color:'#9aabc0'},grid:{color:'#1a2a3b'}},
-
-     y:{beginAtZero:true,ticks:{color:'#9aabc0'},grid:{color:'#1a2a3b'}}
-
-    }:{}
-
-   }
-
-  });
-
- });
-
-}
-
-function renderAnalytics(){
-
- const list=state.transactions||[];
-
- $('analyticsValue').textContent=fmtMoney(
-
-  list.reduce((n,t)=>n+Number(t.amount||0),0)
-
- );
-
- const bins=[0,0,0,0,0];
-
- list.forEach(t=>{
-
-  const r=Number(t.risk_score||0);
-
-  bins[Math.min(4,Math.max(0,Math.floor(r*5)))]++;
-
- });
-
- const c=$('riskChart');
-
- if(c){
-
-  state.charts.riskChart?.destroy();
-
-  state.charts.riskChart=new Chart(c,{
-
-   type:'bar',
-
-   data:{
-
-    labels:['0–0.19','0.20–0.39','0.40–0.59','0.60–0.79','0.80–1.00'],
-
-    datasets:[{
-
-     label:'Transactions',
-
-     data:bins,
-
-     backgroundColor:'#31b9db'
-
-    }]
-
-   },
-
-   options:chartOptions()
-
-  });
-
- }
-
- const ac=$('amountChart');
-
- if(ac){
-
-  const amounts=list.map(t=>Number(t.amount||0)).filter(x=>Number.isFinite(x));
-
-  const ranges=[0,0,0,0];
-
-  amounts.forEach(x=>{
-
-   ranges[x<500?0:x<2000?1:x<5000?2:3]++;
-
-  });
-
-  state.charts.amountChart?.destroy();
-
-  state.charts.amountChart=new Chart(ac,{
-
-   type:'bar',
-
-   data:{
-
-    labels:['< K500','K500–1,999','K2,000–4,999','K5,000+'],
-
-    datasets:[{
-
-     label:'Transactions',
-
-     data:ranges,
-
-     backgroundColor:'#00c995'
-
-    }]
-
-   },
-
-   options:chartOptions()
-
-  });
-
- }
-
-}
+/* CHARTS */
 
 function chartOptions(){
 
@@ -2570,9 +2586,179 @@ function chartOptions(){
 
 }
 
+function drawDecisionCharts(){
+
+ const s=state.stats||{};
+
+ const values=[
+
+  Number(s.allowed||0),
+
+  Number(s.review||0),
+
+  Number(s.blocked||0)
+
+ ];
+
+ [['decisionChart','doughnut'],['analyticsDecisionChart','bar']].forEach(([id,type])=>{
+
+  const canvas=$(id);
+
+  if(!canvas)return;
+
+  state.charts[id]?.destroy();
+
+  state.charts[id]=new Chart(canvas,{
+
+   type,
+
+   data:{
+
+    labels:['ALLOW','REVIEW','BLOCK'],
+
+    datasets:[{
+
+     data:values,
+
+     backgroundColor:['#00c995','#f5bd4f','#ff5470'],
+
+     borderColor:'#0b1422',
+
+     borderWidth:2
+
+    }]
+
+   },
+
+   options:type==='bar'?chartOptions():{
+
+    responsive:true,
+
+    maintainAspectRatio:false,
+
+    plugins:{
+
+     legend:{
+
+      labels:{color:'#9aabc0',font:{size:10}}
+
+     }
+
+    }
+
+   }
+
+  });
+
+ });
+
+}
+
+/* ANALYTICS */
+
+function renderAnalytics(){
+
+ const list=state.transactions||[];
+
+ $('analyticsValue').textContent=fmtMoney(
+
+  list.reduce((sum,t)=>sum+Number(t.amount||0),0)
+
+ );
+
+ const bins=[0,0,0,0,0];
+
+ list.forEach(t=>{
+
+  const score=Number(t.risk_score||0);
+
+  bins[Math.min(4,Math.max(0,Math.floor(score*5)))]++;
+
+ });
+
+ const riskCanvas=$('riskChart');
+
+ if(riskCanvas){
+
+  state.charts.riskChart?.destroy();
+
+  state.charts.riskChart=new Chart(riskCanvas,{
+
+   type:'bar',
+
+   data:{
+
+    labels:['0–0.19','0.20–0.39','0.40–0.59','0.60–0.79','0.80–1.00'],
+
+    datasets:[{
+
+     label:'Transactions',
+
+     data:bins,
+
+     backgroundColor:'#31b9db'
+
+    }]
+
+   },
+
+   options:chartOptions()
+
+  });
+
+ }
+
+ const amountCanvas=$('amountChart');
+
+ if(amountCanvas){
+
+  const ranges=[0,0,0,0];
+
+  list.forEach(t=>{
+
+   const amount=Number(t.amount||0);
+
+   ranges[amount<500?0:amount<2000?1:amount<5000?2:3]++;
+
+  });
+
+  state.charts.amountChart?.destroy();
+
+  state.charts.amountChart=new Chart(amountCanvas,{
+
+   type:'bar',
+
+   data:{
+
+    labels:['< K500','K500–1,999','K2,000–4,999','K5,000+'],
+
+    datasets:[{
+
+     label:'Transactions',
+
+     data:ranges,
+
+     backgroundColor:'#00c995'
+
+    }]
+
+   },
+
+   options:chartOptions()
+
+  });
+
+ }
+
+}
+
+/* THREAT INTELLIGENCE */
+
 function renderThreatSignals(){
 
  const s=state.stats||{};
+
+ const total=Math.max(1,Number(s.total_transactions||1));
 
  $('threatSignals').innerHTML=[
 
@@ -2596,11 +2782,7 @@ function renderThreatSignals(){
 
    <div class="h-1.5 rounded mt-2" style="background:#1b2a3a">
 
-    <div class="h-1.5 rounded"
-
-         style="width:${Math.min(100,Number(n)/Math.max(1,Number(s.total_transactions||1))*100)}%;background:${color}">
-
-    </div>
+    <div class="h-1.5 rounded" style="width:${Math.min(100,Number(n)/total*100)}%;background:${color}"></div>
 
    </div>
 
@@ -2612,55 +2794,45 @@ function renderThreatSignals(){
 
 function renderOriginList(){
 
- const locs={};
+ const locations={};
 
  (state.transactions||[]).forEach(t=>{
 
   if(t.location){
 
-   const k=String(t.location);
+   const key=String(t.location);
 
-   locs[k]=(locs[k]||0)+1;
+   locations[key]=(locations[key]||0)+1;
 
   }
 
  });
 
- const entries=Object.entries(locs)
-
-  .sort((a,b)=>b[1]-a[1])
-
-  .slice(0,8);
+ const entries=Object.entries(locations).sort((a,b)=>b[1]-a[1]).slice(0,8);
 
  $('originList').innerHTML=entries.length
 
-  ?entries.map(([name,n])=>`
+  ?entries.map(([name,count])=>`
 
-   <div class="flex justify-between text-xs py-2 border-b"
+   <div class="flex justify-between text-xs py-2 border-b" style="border-color:var(--line)">
 
-        style="border-color:var(--line)">
-
-    <span>${safeText(name)}</span>
-
-    <b>${n} records</b>
+    <span>${safeText(name)}</span><b>${count} records</b>
 
    </div>
 
   `).join('')
 
-  :'<div class="loading">No transaction location values were returned by the current API.</div>';
+  :'<div class="loading">No transaction location values returned by the API.</div>';
 
 }
+
+/* MAP */
 
 function initMap(){
 
  if(state.map||!window.L)return;
 
- state.map=L.map('threatMap',{
-
-  zoomControl:true
-
- }).setView([-13.1339,27.8493],5);
+ state.map=L.map('threatMap').setView([-13.1339,27.8493],5);
 
  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 
@@ -2684,25 +2856,25 @@ function updateMap(){
 
  const geo=(state.transactions||[]).filter(t=>
 
+  t.latitude!==null&&t.longitude!==null&&
+
+  t.latitude!==undefined&&t.longitude!==undefined&&
+
   Number.isFinite(Number(t.latitude))&&
 
-  Number.isFinite(Number(t.longitude))&&
-
-  t.latitude!==null&&
-
-  t.longitude!==null
+  Number.isFinite(Number(t.longitude))
 
  );
 
  geo.forEach(t=>{
 
-  const d=String(t.decision||'ALLOW').toUpperCase();
+  const decision=String(t.decision||'ALLOW').toUpperCase();
 
-  const color=d==='BLOCK'
+  const color=decision==='BLOCK'
 
    ?'#ff5470'
 
-   :d==='REVIEW'
+   :decision==='REVIEW'
 
     ?'#f5bd4f'
 
@@ -2724,21 +2896,17 @@ function updateMap(){
 
    }
 
-  )
-
-  .bindPopup(`
+  ).bindPopup(`
 
    <b>${safeText(t.transaction_id)}</b><br>
 
-   ${safeText(d)}<br>
+   ${safeText(decision)}<br>
 
    ${fmtMoney(t.amount)}<br>
 
    Risk: ${safeText(t.risk_score)}
 
-  `)
-
-  .addTo(state.mapLayer);
+  `).addTo(state.mapLayer);
 
  });
 
@@ -2746,9 +2914,11 @@ function updateMap(){
 
   ?`${geo.length} geolocated events`
 
-  :'0 geolocated events • API currently omits coordinates';
+  :'0 geolocated events • coordinates not returned by API';
 
 }
+
+/* CSV EXPORT */
 
 function exportTransactions(){
 
@@ -2760,7 +2930,7 @@ function exportTransactions(){
 
  }
 
- const cols=[
+ const columns=[
 
   'transaction_id',
 
@@ -2782,13 +2952,13 @@ function exportTransactions(){
 
  const csv=[
 
-  cols.join(','),
+  columns.join(','),
 
-  ...rows.map(r=>
+  ...rows.map(row=>
 
-   cols.map(k=>
+   columns.map(key=>
 
-    '"'+String(r[k]??'').replace(/"/g,'""')+'"'
+    '"'+String(row[key]??'').replace(/"/g,'""')+'"'
 
    ).join(',')
 
@@ -2796,27 +2966,25 @@ function exportTransactions(){
 
  ].join('\r\n');
 
- const blob=new Blob([csv],{
-
-  type:'text/csv;charset=utf-8'
-
- });
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
 
  const url=URL.createObjectURL(blob);
 
- const a=document.createElement('a');
+ const link=document.createElement('a');
 
- a.href=url;
+ link.href=url;
 
- a.download='guardian-transactions.csv';
+ link.download='the-guardian-transactions.csv';
 
- a.click();
+ link.click();
 
  URL.revokeObjectURL(url);
 
  toast(`Exported ${rows.length} loaded transaction records.`);
 
 }
+
+/* START */
 
 document.addEventListener('DOMContentLoaded',()=>{
 
