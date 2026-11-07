@@ -1,450 +1,2833 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THE GUARDIAN // Admin Command Center</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #060a12; color: #e2e8f0; }
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        .sidebar { background: #0a0f1a; border-right: 1px solid rgba(0,255,159,0.1); }
-        .card { background: rgba(12, 18, 32, 0.9); border: 1px solid rgba(0,255,159,0.1); border-radius: 12px; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; color: #94a3b8; cursor: pointer; transition: 0.2s; font-size: 14px; }
-        .nav-item:hover, .nav-item.active { background: rgba(0,255,159,0.1); color: #00ff9f; }
-        .section { display: none; }
-        .section.active { display: block; animation: fadeIn 0.25s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .stat-card { background: linear-gradient(145deg, rgba(15,23,42,0.95), rgba(8,12,22,0.98)); border: 1px solid rgba(0,255,159,0.12); border-radius: 12px; padding: 18px; }
-        .mobile-menu { display: none; }
-        @media (max-width: 768px) {
-            .sidebar { position: fixed; left: -100%; top: 0; bottom: 0; width: 260px; z-index: 50; transition: 0.3s; }
-            .sidebar.open { left: 0; }
-            .mobile-menu { display: block; }
-            .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 40; }
-            .overlay.show { display: block; }
-        }
-        .map-container { position: relative; background: radial-gradient(ellipse at center, #0c1525 0%, #060a12 70%); border-radius: 12px; overflow: hidden; }
-        .map-point { position: absolute; width: 10px; height: 10px; background: #00ff9f; border-radius: 50%; box-shadow: 0 0 12px #00ff9f; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.4); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
-    </style>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>VELTRIX AML // THE GUARDIAN</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+
+ --bg:#050912;
+
+ --panel:#0b1422;
+
+ --panel2:#0e1a2b;
+
+ --line:rgba(76,201,240,.16);
+
+ --cyan:#39d5f6;
+
+ --green:#00e6a0;
+
+ --muted:#8293a8;
+
+ --red:#ff5470;
+
+ --amber:#f5bd4f;
+
+}
+
+*{box-sizing:border-box}
+
+body{
+
+ margin:0;
+
+ background:radial-gradient(ellipse at 70% -10%,#10243b 0,transparent 42%),var(--bg);
+
+ color:#e6edf7;
+
+ font-family:Inter,sans-serif
+
+}
+
+.mono{font-family:'JetBrains Mono',monospace}
+
+.sidebar{background:#07101c;border-right:1px solid var(--line)}
+
+.panel{
+
+ background:linear-gradient(145deg,rgba(14,26,43,.97),rgba(7,14,25,.98));
+
+ border:1px solid var(--line);
+
+ border-radius:14px;
+
+ box-shadow:0 10px 30px #0002
+
+}
+
+.metric{
+
+ background:linear-gradient(145deg,#102239,#0a1422);
+
+ border:1px solid var(--line);
+
+ border-radius:13px;
+
+ padding:17px;
+
+ min-height:112px
+
+}
+
+.nav-group{
+
+ font-size:10px;
+
+ letter-spacing:.16em;
+
+ color:#61758d;
+
+ font-weight:800;
+
+ padding:17px 12px 7px
+
+}
+
+.nav-item{
+
+ display:flex;
+
+ align-items:center;
+
+ gap:12px;
+
+ padding:10px 12px;
+
+ border-radius:9px;
+
+ color:#9aabc0;
+
+ font-size:13px;
+
+ cursor:pointer;
+
+ transition:.18s
+
+}
+
+.nav-item:hover,.nav-item.active{
+
+ background:rgba(57,213,246,.1);
+
+ color:var(--cyan)
+
+}
+
+.nav-item.active{box-shadow:inset 2px 0 var(--cyan)}
+
+.section{display:none}
+
+.section.active{display:block;animation:appear .2s ease}
+
+@keyframes appear{
+
+ from{opacity:.45;transform:translateY(4px)}
+
+ to{opacity:1;transform:none}
+
+}
+
+.tag{
+
+ font-size:10px;
+
+ padding:4px 7px;
+
+ border-radius:5px;
+
+ border:1px solid var(--line);
+
+ color:#9eb0c6
+
+}
+
+.status-dot{
+
+ width:7px;
+
+ height:7px;
+
+ border-radius:50%;
+
+ display:inline-block;
+
+ background:var(--green);
+
+ box-shadow:0 0 9px currentColor
+
+}
+
+.btn{
+
+ border:1px solid var(--line);
+
+ border-radius:8px;
+
+ padding:8px 11px;
+
+ font-size:12px;
+
+ color:#b8c8da;
+
+ background:#0c1b2b
+
+}
+
+.btn:hover{border-color:var(--cyan);color:var(--cyan)}
+
+.btn-primary{
+
+ background:#063b43;
+
+ border-color:#087e88;
+
+ color:#73edee
+
+}
+
+.field{
+
+ background:#071321;
+
+ border:1px solid var(--line);
+
+ border-radius:8px;
+
+ padding:9px 11px;
+
+ color:#e6edf7;
+
+ outline:none;
+
+ font-size:12px
+
+}
+
+.field:focus{border-color:var(--cyan)}
+
+.table-wrap{overflow:auto}
+
+table{
+
+ width:100%;
+
+ border-collapse:collapse;
+
+ white-space:nowrap;
+
+ font-size:12px
+
+}
+
+th{
+
+ text-align:left;
+
+ color:#70849c;
+
+ font-size:10px;
+
+ letter-spacing:.08em;
+
+ font-weight:700;
+
+ padding:11px 9px;
+
+ border-bottom:1px solid var(--line)
+
+}
+
+td{
+
+ padding:11px 9px;
+
+ border-bottom:1px solid rgba(76,201,240,.08);
+
+ color:#c4d0df
+
+}
+
+tr:hover td{background:#ffffff05}
+
+.pill{
+
+ display:inline-block;
+
+ padding:4px 7px;
+
+ border-radius:5px;
+
+ font-size:10px;
+
+ font-weight:700
+
+}
+
+.allow{color:#42e6ad;background:#0b3a31}
+
+.review{color:#f5c65e;background:#403316}
+
+.block{color:#ff7188;background:#431c2a}
+
+.muted{color:var(--muted)}
+
+#threatMap{
+
+ height:360px;
+
+ border-radius:10px;
+
+ background:#081525;
+
+ z-index:1
+
+}
+
+.leaflet-container{background:#081525}
+
+.leaflet-control-attribution{font-size:9px!important}
+
+.chart-box{height:260px;position:relative}
+
+.toast{
+
+ position:fixed;
+
+ right:18px;
+
+ bottom:18px;
+
+ z-index:1000;
+
+ background:#102337;
+
+ border:1px solid #26718b;
+
+ color:#e6faff;
+
+ border-radius:10px;
+
+ padding:12px 16px;
+
+ max-width:360px;
+
+ box-shadow:0 10px 35px #0008;
+
+ font-size:12px;
+
+ display:none
+
+}
+
+.toast.show{display:block;animation:appear .2s}
+
+.loading{
+
+ color:#8293a8;
+
+ font-size:12px;
+
+ padding:18px;
+
+ text-align:center
+
+}
+
+.feature-card{
+
+ padding:14px;
+
+ border:1px solid var(--line);
+
+ background:#091625;
+
+ border-radius:10px;
+
+ min-height:90px
+
+}
+
+.feature-card .ico{
+
+ color:var(--cyan);
+
+ font-size:15px;
+
+ margin-bottom:9px
+
+}
+
+.feature-card h4{font-size:12px;font-weight:700}
+
+.feature-card p{
+
+ font-size:10px;
+
+ color:#8293a8;
+
+ margin-top:4px;
+
+ line-height:1.5
+
+}
+
+@media(max-width:800px){
+
+ .sidebar{
+
+  position:fixed;
+
+  left:-285px;
+
+  top:0;
+
+  bottom:0;
+
+  width:270px;
+
+  z-index:50;
+
+  transition:.25s
+
+ }
+
+ .sidebar.open{left:0}
+
+ .overlay{
+
+  display:none;
+
+  position:fixed;
+
+  inset:0;
+
+  background:#000a;
+
+  z-index:40
+
+ }
+
+ .overlay.show{display:block}
+
+ .main{
+
+  margin-left:0!important;
+
+  padding:14px!important
+
+ }
+
+ #threatMap{height:300px}
+
+}
+
+</style>
+
 </head>
-<body class="min-h-screen">
 
-<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+<body>
 
-<!-- Sidebar -->
-<aside class="sidebar fixed h-full w-64 p-5 z-50 flex flex-col" id="sidebar">
-    <div class="flex items-center gap-3 mb-8">
-        <div class="w-10 h-10 rounded-lg bg-green-500/15 border border-green-500/40 flex items-center justify-center">
-            <i class="fas fa-shield-alt text-green-400"></i>
-        </div>
-        <div>
-            <h1 class="font-bold text-green-400 text-lg">THE GUARDIAN</h1>
-            <p class="text-xs text-gray-500">Admin Command Center</p>
-        </div>
-    </div>
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
 
-    <nav class="space-y-1 flex-1 overflow-y-auto">
-        <div class="nav-item active" onclick="showSection('dashboard', this)"><i class="fas fa-home w-5"></i> Dashboard</div>
-        <div class="nav-item" onclick="showSection('users', this)"><i class="fas fa-users w-5"></i> Users</div>
-        <div class="nav-item" onclick="showSection('activity', this)"><i class="fas fa-history w-5"></i> Activity Log</div>
-        <div class="nav-item" onclick="showSection('transactions', this)"><i class="fas fa-exchange-alt w-5"></i> Transactions</div>
-        <div class="nav-item" onclick="showSection('network', this)"><i class="fas fa-network-wired w-5"></i> Network Monitor</div>
-        <div class="nav-item" onclick="showSection('sessions', this)"><i class="fas fa-laptop w-5"></i> Active Sessions</div>
-        <div class="nav-item" onclick="showSection('security', this)"><i class="fas fa-shield-virus w-5"></i> Security Score</div>
-        <div class="nav-item" onclick="showSection('system', this)"><i class="fas fa-cogs w-5"></i> System Settings</div>
-    </nav>
+<aside id="sidebar" class="sidebar fixed inset-y-0 left-0 w-[270px] p-4 flex flex-col">
 
-    <div class="mt-4 pt-4 border-t border-green-900/30">
-        <a href="/logout" class="nav-item text-red-400 hover:bg-red-500/10">
-            <i class="fas fa-sign-out-alt w-5"></i> Logout
-        </a>
-    </div>
+ <div class="flex items-center gap-3 px-2 py-3 mb-3">
+
+  <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+
+       style="background:#07313a;border:1px solid #087b82">
+
+   <i class="fa-solid fa-shield-halved text-xl" style="color:var(--green)"></i>
+
+  </div>
+
+  <div>
+
+   <div class="font-extrabold tracking-wider text-white">
+
+    VELTRIX <span style="color:var(--cyan)">AML</span>
+
+   </div>
+
+   <div class="text-[10px] tracking-widest muted">THE GUARDIAN PLATFORM</div>
+
+  </div>
+
+ </div>
+
+ <div class="px-3 py-2 mb-3 rounded-lg text-[10px] mono"
+
+      style="background:#091b29;border:1px solid var(--line)">
+
+  <span class="status-dot mr-2"></span>
+
+  COMMAND ENVIRONMENT
+
+  <span class="float-right" style="color:var(--green)">ONLINE*</span>
+
+ </div>
+
+ <nav class="flex-1 overflow-y-auto">
+
+  <div class="nav-group">COMMAND</div>
+
+  <div class="nav-item active" data-section="executive"
+
+       onclick="showSection('executive',this)">
+
+   <i class="fa-solid fa-gauge-high w-4"></i>
+
+   Executive Command
+
+  </div>
+
+  <div class="nav-group">INTELLIGENCE</div>
+
+  <div class="nav-item" data-section="threat"
+
+       onclick="showSection('threat',this)">
+
+   <i class="fa-solid fa-earth-africa w-4"></i>
+
+   Global Threat Intelligence
+
+  </div>
+
+  <div class="nav-item" data-section="alerts"
+
+       onclick="showSection('alerts',this)">
+
+   <i class="fa-solid fa-triangle-exclamation w-4"></i>
+
+   Alerts & Investigation
+
+   <span id="alertNavCount" class="ml-auto tag">—</span>
+
+  </div>
+
+  <div class="nav-item" data-section="analytics"
+
+       onclick="showSection('analytics',this)">
+
+   <i class="fa-solid fa-chart-line w-4"></i>
+
+   Advanced Analytics
+
+  </div>
+
+  <div class="nav-group">GUARDIAN OPERATIONS</div>
+
+  <div class="nav-item" data-section="transactions"
+
+       onclick="showSection('transactions',this)">
+
+   <i class="fa-solid fa-arrow-right-arrow-left w-4"></i>
+
+   Transactions
+
+  </div>
+
+  <div class="nav-item" data-section="users"
+
+       onclick="showSection('users',this)">
+
+   <i class="fa-solid fa-users w-4"></i>
+
+   User Management
+
+  </div>
+
+  <div class="nav-item" data-section="activity"
+
+       onclick="showSection('activity',this)">
+
+   <i class="fa-solid fa-clock-rotate-left w-4"></i>
+
+   Activity Audit Log
+
+  </div>
+
+  <div class="nav-item" data-section="sessions"
+
+       onclick="showSection('sessions',this)">
+
+   <i class="fa-solid fa-laptop w-4"></i>
+
+   Active Sessions
+
+  </div>
+
+  <div class="nav-item" data-section="network"
+
+       onclick="showSection('network',this)">
+
+   <i class="fa-solid fa-network-wired w-4"></i>
+
+   Network Monitor
+
+  </div>
+
+  <div class="nav-item" data-section="security"
+
+       onclick="showSection('security',this)">
+
+   <i class="fa-solid fa-shield-virus w-4"></i>
+
+   Security Posture
+
+  </div>
+
+  <div class="nav-item" data-section="system"
+
+       onclick="showSection('system',this)">
+
+   <i class="fa-solid fa-sliders w-4"></i>
+
+   System Settings
+
+  </div>
+
+ </nav>
+
+ <div class="border-t pt-3 mt-3" style="border-color:var(--line)">
+
+  <a href="/logout" class="nav-item" style="color:var(--red)">
+
+   <i class="fa-solid fa-right-from-bracket w-4"></i>
+
+   Sign out
+
+  </a>
+
+  <p class="px-3 mt-2 text-[9px] muted">
+
+   THE GUARDIAN • ZAMBIA<br>
+
+   VELTRIX AML INTERFACE
+
+  </p>
+
+ </div>
+
 </aside>
 
-<!-- Main Content -->
-<main class="md:ml-64 p-4 md:p-6">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <div class="flex items-center gap-3">
-            <button class="mobile-menu text-green-400 text-xl" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-            <div>
-                <h2 class="text-xl md:text-2xl font-bold">Welcome back, <span class="text-green-400">Administrator Mulenga</span></h2>
-                <p class="text-gray-500 text-sm">Real-time Fraud Detection System • Zambia</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <button onclick="loadAllData()" class="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/30 text-green-400 text-sm">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30">
-                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                <span class="text-green-400 text-xs font-medium">SYSTEM LIVE</span>
-            </div>
-        </div>
+<main class="main ml-[270px] p-6">
+
+ <header class="flex flex-wrap items-center justify-between gap-3 mb-6">
+
+  <div class="flex items-center gap-3">
+
+   <button class="btn md:hidden" onclick="toggleSidebar()">
+
+    <i class="fa-solid fa-bars"></i>
+
+   </button>
+
+   <div>
+
+    <div class="text-[10px] tracking-[.2em] muted font-bold">
+
+     FINANCIAL CRIME INTELLIGENCE / ZM
+
     </div>
 
-    <!-- ==================== DASHBOARD ==================== -->
-    <div id="section-dashboard" class="section active">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="stat-card">
-                <p class="text-gray-500 text-xs mb-1">TOTAL TRANSACTIONS</p>
-                <h3 class="text-2xl font-bold text-cyan-400" id="stat-total">0</h3>
-            </div>
-            <div class="stat-card">
-                <p class="text-gray-500 text-xs mb-1">ALLOWED</p>
-                <h3 class="text-2xl font-bold text-green-400" id="stat-allowed">0</h3>
-            </div>
-            <div class="stat-card">
-                <p class="text-gray-500 text-xs mb-1">UNDER REVIEW</p>
-                <h3 class="text-2xl font-bold text-yellow-400" id="stat-review">0</h3>
-            </div>
-            <div class="stat-card">
-                <p class="text-gray-500 text-xs mb-1">BLOCKED</p>
-                <h3 class="text-2xl font-bold text-red-400" id="stat-blocked">0</h3>
-            </div>
-        </div>
+    <h1 id="pageTitle" class="text-xl md:text-2xl font-extrabold mt-1">
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <!-- Map -->
-            <div class="lg:col-span-2 card p-5">
-                <h3 class="text-sm text-cyan-400 font-medium mb-3"><i class="fas fa-globe-africa mr-2"></i>Africa Threat Map • Focus: Zambia</h3>
-                <div class="map-container h-64 flex items-center justify-center relative">
-                    <!-- Simple Africa representation -->
-                    <div class="text-center">
-                        <div class="text-6xl text-green-500/30 mb-2"><i class="fas fa-globe-africa"></i></div>
-                        <p class="text-green-400 text-sm font-medium">Zambia • Lusaka</p>
-                        <p class="text-gray-500 text-xs mt-1">Primary monitoring zone</p>
-                    </div>
-                    <!-- Glowing points -->
-                    <div class="map-point" style="top: 48%; left: 52%;"></div>
-                    <div class="map-point" style="top: 42%; left: 48%; animation-delay: 0.5s;"></div>
-                    <div class="map-point" style="top: 55%; left: 55%; animation-delay: 1s;"></div>
-                </div>
-                <div class="flex gap-4 mt-3 text-xs text-gray-400">
-                    <span><span class="inline-block w-2 h-2 rounded-full bg-green-400 mr-1"></span> Active Zone</span>
-                    <span><span class="inline-block w-2 h-2 rounded-full bg-yellow-400 mr-1"></span> Medium Risk</span>
-                    <span><span class="inline-block w-2 h-2 rounded-full bg-red-400 mr-1"></span> High Risk</span>
-                </div>
-            </div>
+     Executive Command
 
-            <!-- Live Activity -->
-            <div class="card p-5">
-                <h3 class="text-sm text-yellow-400 font-medium mb-4"><i class="fas fa-bolt mr-2"></i>Live Activity</h3>
-                <div id="liveActivity" class="space-y-3 text-sm max-h-64 overflow-y-auto"></div>
-            </div>
-        </div>
+    </h1>
 
-        <!-- Recent Transactions -->
-        <div class="card p-5">
-            <h3 class="text-sm text-cyan-400 font-medium mb-4"><i class="fas fa-exchange-alt mr-2"></i>Recent Transactions</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="text-gray-500 text-xs border-b border-green-900/30">
-                        <tr>
-                            <th class="text-left py-2">TXN ID</th>
-                            <th class="text-left py-2">AMOUNT</th>
-                            <th class="text-left py-2">RISK</th>
-                            <th class="text-left py-2">DECISION</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recentTxBody"></tbody>
-                </table>
-            </div>
-        </div>
+    <p class="text-xs muted mt-1">
+
+     THE GUARDIAN • VELTRIX AML operational environment
+
+    </p>
+
+   </div>
+
+  </div>
+
+  <div class="flex items-center gap-2">
+
+   <div class="text-right mr-2">
+
+    <div id="lastUpdated" class="text-[10px] mono muted">Awaiting data</div>
+
+    <div id="apiStatus" class="text-[10px]" style="color:var(--amber)">
+
+     CONNECTING TO BACKEND
+
     </div>
 
-    <!-- ==================== USERS ==================== -->
-    <div id="section-users" class="section">
-        <div class="card p-5">
-            <h3 class="text-sm text-green-400 font-medium mb-4"><i class="fas fa-users mr-2"></i>Registered Users</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="text-gray-500 text-xs border-b border-green-900/30">
-                        <tr>
-                            <th class="text-left py-2">NAME</th>
-                            <th class="text-left py-2">PHONE</th>
-                            <th class="text-left py-2">BALANCE</th>
-                            <th class="text-left py-2">ACTION</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersBody"></tbody>
-                </table>
-            </div>
-        </div>
+   </div>
+
+   <button class="btn btn-primary" onclick="loadAllData()">
+
+    <i class="fa-solid fa-rotate mr-2"></i>Refresh
+
+   </button>
+
+  </div>
+
+ </header>
+
+ <!-- EXECUTIVE COMMAND -->
+
+ <section id="section-executive" class="section active">
+
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+
+   <div class="metric">
+
+    <div class="text-[10px] muted tracking-wider">TRANSACTIONS PROCESSED</div>
+
+    <div id="stat-total" class="text-3xl font-extrabold mt-2">—</div>
+
+    <div class="text-[10px] muted mt-2">All recorded transactions</div>
+
+   </div>
+
+   <div class="metric">
+
+    <div class="text-[10px] muted tracking-wider">ALLOWED</div>
+
+    <div id="stat-allowed" class="text-3xl font-extrabold mt-2"
+
+         style="color:var(--green)">—</div>
+
+    <div id="allowedPct" class="text-[10px] muted mt-2">
+
+     Decision distribution
+
     </div>
 
-    <!-- ==================== ACTIVITY LOG ==================== -->
-    <div id="section-activity" class="section">
-        <div class="card p-5">
-            <h3 class="text-sm text-yellow-400 font-medium mb-4"><i class="fas fa-history mr-2"></i>System Activity Log</h3>
-            <div id="activityBody" class="space-y-3 text-sm max-h-[520px] overflow-y-auto"></div>
-        </div>
+   </div>
+
+   <div class="metric">
+
+    <div class="text-[10px] muted tracking-wider">PENDING REVIEW</div>
+
+    <div id="stat-review" class="text-3xl font-extrabold mt-2"
+
+         style="color:var(--amber)">—</div>
+
+    <div class="text-[10px] muted mt-2">
+
+     Transactions requiring review
+
     </div>
 
-    <!-- ==================== TRANSACTIONS ==================== -->
-    <div id="section-transactions" class="section">
-        <div class="card p-5">
-            <h3 class="text-sm text-cyan-400 font-medium mb-4"><i class="fas fa-exchange-alt mr-2"></i>All Transactions</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="text-gray-500 text-xs border-b border-green-900/30">
-                        <tr>
-                            <th class="text-left py-2">TXN ID</th>
-                            <th class="text-left py-2">AMOUNT</th>
-                            <th class="text-left py-2">SENDER</th>
-                            <th class="text-left py-2">RECEIVER</th>
-                            <th class="text-left py-2">DECISION</th>
-                        </tr>
-                    </thead>
-                    <tbody id="allTxBody"></tbody>
-                </table>
-            </div>
-        </div>
+   </div>
+
+   <div class="metric">
+
+    <div class="text-[10px] muted tracking-wider">BLOCKED</div>
+
+    <div id="stat-blocked" class="text-3xl font-extrabold mt-2"
+
+         style="color:var(--red)">—</div>
+
+    <div id="blockedPct" class="text-[10px] muted mt-2">
+
+     Fraud engine decisions
+
     </div>
 
-    <!-- ==================== NETWORK MONITOR ==================== -->
-    <div id="section-network" class="section">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div class="card p-5">
-                <h3 class="text-sm text-cyan-400 font-medium mb-3">Network Traffic</h3>
-                <p class="text-gray-400 text-sm">Incoming: <span class="text-green-400 font-medium" id="net-in">1.4 MB/s</span></p>
-                <p class="text-gray-400 text-sm">Outgoing: <span class="text-yellow-400 font-medium" id="net-out">0.9 MB/s</span></p>
-                <p class="text-gray-400 text-sm mt-2">Active Connections: <span class="text-white font-medium" id="net-conn">52</span></p>
-            </div>
-            <div class="card p-5">
-                <h3 class="text-sm text-green-400 font-medium mb-3">IP Geolocation</h3>
-                <p class="text-gray-400 text-sm">Primary Location: <span class="text-white">Zambia (Lusaka)</span></p>
-                <p class="text-gray-400 text-sm">High-risk countries blocked: <span class="text-red-400">3</span></p>
-                <p class="text-gray-400 text-sm mt-2">Last detected IP: <span class="text-cyan-300" id="last-ip">—</span></p>
-            </div>
-        </div>
-        <div class="card p-5">
-            <h3 class="text-sm text-yellow-400 font-medium mb-3">Connection Status</h3>
-            <div id="connectionList" class="space-y-2 text-sm"></div>
-        </div>
+   </div>
+
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+
+   <div class="panel p-4 xl:col-span-2">
+
+    <div class="flex justify-between items-center mb-3">
+
+     <div>
+
+      <h3 class="font-bold text-sm">Executive Transaction Pulse</h3>
+
+      <p class="text-[10px] muted mt-1">
+
+       Four command indicators • database-backed
+
+      </p>
+
+     </div>
+
+     <span class="tag">FEATURE 01 / 04</span>
+
     </div>
 
-    <!-- ==================== ACTIVE SESSIONS ==================== -->
-    <div id="section-sessions" class="section">
-        <div class="card p-5">
-            <h3 class="text-sm text-cyan-400 font-medium mb-4"><i class="fas fa-laptop mr-2"></i>Active Sessions & Devices</h3>
-            <div id="sessionsBody" class="space-y-3 text-sm"></div>
-        </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+
+     <div class="feature-card">
+
+      <i class="ico fa-solid fa-arrow-right-arrow-left"></i>
+
+      <h4>Transaction Volume</h4>
+
+      <p>All transactions persisted in THE GUARDIAN database.</p>
+
+     </div>
+
+     <div class="feature-card">
+
+      <i class="ico fa-solid fa-shield-halved"></i>
+
+      <h4>Fraud Decisions</h4>
+
+      <p>ALLOW, REVIEW and BLOCK decision totals.</p>
+
+     </div>
+
+     <div class="feature-card">
+
+      <i class="ico fa-solid fa-users"></i>
+
+      <h4>Customer Base</h4>
+
+      <p><b id="userCountFeature">—</b> registered user records.</p>
+
+     </div>
+
+     <div class="feature-card">
+
+      <i class="ico fa-solid fa-bolt"></i>
+
+      <h4>Latest Activity</h4>
+
+      <p id="latestActivityFeature">Waiting for audit events.</p>
+
+     </div>
+
     </div>
 
-    <!-- ==================== SECURITY SCORE ==================== -->
-    <div id="section-security" class="section">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="card p-6 text-center">
-                <p class="text-gray-500 text-xs mb-2">Overall Security Score</p>
-                <h3 class="text-5xl font-bold text-green-400">92<span class="text-xl">/100</span></h3>
-                <p class="text-xs text-gray-500 mt-2">Excellent protection level</p>
-            </div>
-            <div class="card p-5">
-                <p class="text-gray-500 text-xs mb-1">Intrusion Attempts</p>
-                <h3 class="text-3xl font-bold text-yellow-400">2</h3>
-                <p class="text-xs text-gray-500 mt-1">Detected today</p>
-            </div>
-            <div class="card p-5">
-                <p class="text-gray-500 text-xs mb-1">Blocked Transactions</p>
-                <h3 class="text-3xl font-bold text-red-400" id="sec-blocked">0</h3>
-                <p class="text-xs text-gray-500 mt-1">High risk blocked</p>
-            </div>
-        </div>
+   </div>
+
+   <div class="panel p-4">
+
+    <h3 class="font-bold text-sm mb-1">Decision Mix</h3>
+
+    <p class="text-[10px] muted mb-2">Recorded decision distribution</p>
+
+    <div class="chart-box" style="height:210px">
+
+     <canvas id="decisionChart"></canvas>
+
     </div>
 
-    <!-- ==================== SYSTEM SETTINGS ==================== -->
-    <div id="section-system" class="section">
-        <div class="card p-6 max-w-2xl">
-            <h3 class="text-sm text-green-400 font-medium mb-6"><i class="fas fa-cogs mr-2"></i>System Settings</h3>
-            <div class="space-y-5">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-medium">Auto Block High Risk</p>
-                        <p class="text-xs text-gray-500">Automatically block high-risk transactions</p>
-                    </div>
-                    <span class="text-green-400 text-sm font-medium">Enabled</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-medium">Detailed Activity Logging</p>
-                        <p class="text-xs text-gray-500">Log all user and system actions</p>
-                    </div>
-                    <span class="text-green-400 text-sm font-medium">Enabled</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-medium">Risk Color Coding</p>
-                        <p class="text-xs text-gray-500">Color-code decisions by risk level</p>
-                    </div>
-                    <span class="text-green-400 text-sm font-medium">Enabled</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-medium">Real-time Notifications</p>
-                        <p class="text-xs text-gray-500">Show live alerts for suspicious activity</p>
-                    </div>
-                    <span class="text-green-400 text-sm font-medium">Enabled</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-medium">Maintenance Mode</p>
-                        <p class="text-xs text-gray-500">Temporarily disable user transactions</p>
-                    </div>
-                    <span class="text-gray-400 text-sm font-medium">Disabled</span>
-                </div>
-            </div>
-        </div>
+   </div>
+
+  </div>
+
+  <div class="panel p-4">
+
+   <div class="flex justify-between items-center mb-3">
+
+    <h3 class="font-bold text-sm">Recent Transaction Command Feed</h3>
+
+    <button class="btn" onclick="showSection('transactions')">
+
+     Open transaction desk <i class="fa-solid fa-arrow-right ml-1"></i>
+
+    </button>
+
+   </div>
+
+   <div class="table-wrap">
+
+    <table>
+
+     <thead>
+
+      <tr>
+
+       <th>TRANSACTION ID</th>
+
+       <th>AMOUNT</th>
+
+       <th>SENDER</th>
+
+       <th>RECEIVER</th>
+
+       <th>RISK SCORE</th>
+
+       <th>DECISION</th>
+
+       <th>TIME</th>
+
+      </tr>
+
+     </thead>
+
+     <tbody id="recentTxBody">
+
+      <tr><td colspan="7" class="loading">Loading recorded transactions…</td></tr>
+
+     </tbody>
+
+    </table>
+
+   </div>
+
+  </div>
+
+ </section>
+
+ <!-- GLOBAL THREAT INTELLIGENCE -->
+
+ <section id="section-threat" class="section">
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+
+   <div class="panel p-4 xl:col-span-2">
+
+    <div class="flex justify-between items-center mb-3">
+
+     <div>
+
+      <h3 class="font-bold text-sm">Geospatial Threat Intelligence Map</h3>
+
+      <p class="text-[10px] muted mt-1">
+
+       Only transactions with stored latitude/longitude can be plotted
+
+      </p>
+
+     </div>
+
+     <span class="tag">FEATURE 01 / 04</span>
+
     </div>
 
-    <div class="text-center text-gray-600 text-xs mt-12">
-        THE GUARDIAN • ADMIN COMMAND CENTER<br>
-        <span class="text-green-500">Secured by Engineer Mulenga</span>
+    <div id="threatMap"></div>
+
+    <div class="flex flex-wrap gap-4 text-[10px] muted mt-3">
+
+     <span><i class="fa-solid fa-circle mr-1" style="color:var(--green)"></i>ALLOW</span>
+
+     <span><i class="fa-solid fa-circle mr-1" style="color:var(--amber)"></i>REVIEW</span>
+
+     <span><i class="fa-solid fa-circle mr-1" style="color:var(--red)"></i>BLOCK</span>
+
+     <span id="mapCount" class="ml-auto">0 geolocated events</span>
+
     </div>
+
+   </div>
+
+   <div class="panel p-4">
+
+    <h3 class="font-bold text-sm mb-1">Live Activity Stream</h3>
+
+    <p class="text-[10px] muted mb-3">
+
+     Latest persisted audit events • FEATURE 02 / 04
+
+    </p>
+
+    <div id="liveActivity" class="space-y-2 max-h-[355px] overflow-y-auto">
+
+     <div class="loading">Loading audit activity…</div>
+
+    </div>
+
+   </div>
+
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+   <div class="panel p-4">
+
+    <div class="flex justify-between">
+
+     <h3 class="font-bold text-sm">Transaction Origin Intelligence</h3>
+
+     <span class="tag">FEATURE 03 / 04</span>
+
+    </div>
+
+    <p class="text-[10px] muted mt-1 mb-3">
+
+     Location values recorded with transaction events
+
+    </p>
+
+    <div id="originList" class="space-y-2">
+
+     <div class="loading">Waiting for location data…</div>
+
+    </div>
+
+   </div>
+
+   <div class="panel p-4">
+
+    <div class="flex justify-between">
+
+     <h3 class="font-bold text-sm">Threat Signal Monitor</h3>
+
+     <span class="tag">FEATURE 04 / 04</span>
+
+    </div>
+
+    <p class="text-[10px] muted mt-1 mb-3">
+
+     Risk decisions from the fraud engine
+
+    </p>
+
+    <div id="threatSignals" class="space-y-3"></div>
+
+   </div>
+
+  </div>
+
+ </section>
+
+ <!-- ALERTS AND INVESTIGATION -->
+
+ <section id="section-alerts" class="section">
+
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+
+   <div class="metric">
+
+    <div class="text-[10px] muted">BLOCK DECISIONS</div>
+
+    <div id="alertBlocked" class="text-2xl font-bold mt-2"
+
+         style="color:var(--red)">—</div>
+
+   </div>
+
+   <div class="metric">
+
+    <div class="text-[10px] muted">REVIEW QUEUE</div>
+
+    <div id="alertReview" class="text-2xl font-bold mt-2"
+
+         style="color:var(--amber)">—</div>
+
+   </div>
+
+   <div class="metric">
+
+    <div class="text-[10px] muted">USER REPORTS</div>
+
+    <div id="reportCount" class="text-2xl font-bold mt-2">—</div>
+
+   </div>
+
+   <div class="metric">
+
+    <div class="text-[10px] muted">OPEN CASES</div>
+
+    <div id="caseCount" class="text-2xl font-bold mt-2">API REQUIRED</div>
+
+   </div>
+
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+
+   <div class="feature-card">
+
+    <i class="ico fa-solid fa-bell"></i>
+
+    <h4>Automated Risk Alerts <span class="tag ml-2">01 / 04</span></h4>
+
+    <p>
+
+     Review and block decisions surfaced from the fraud engine.
+
+     These are alerts, not independently verified criminal findings.
+
+    </p>
+
+   </div>
+
+   <div class="feature-card">
+
+    <i class="ico fa-solid fa-magnifying-glass-chart"></i>
+
+    <h4>Transaction Investigation <span class="tag ml-2">02 / 04</span></h4>
+
+    <p>
+
+     Inspect sender, receiver, amount, risk score, decision and
+
+     recorded risk factors.
+
+    </p>
+
+   </div>
+
+   <div class="feature-card">
+
+    <i class="ico fa-solid fa-file-circle-exclamation"></i>
+
+    <h4>Customer-Submitted Reports <span class="tag ml-2">03 / 04</span></h4>
+
+    <p>
+
+     Existing suspicious-transaction reports require an admin reports
+
+     endpoint to display and action them.
+
+    </p>
+
+   </div>
+
+   <div class="feature-card">
+
+    <i class="ico fa-solid fa-folder-open"></i>
+
+    <h4>Investigation Case Management <span class="tag ml-2">04 / 04</span></h4>
+
+    <p>
+
+     Case assignment, notes, status transitions and evidence history
+
+     require case-management APIs.
+
+    </p>
+
+   </div>
+
+  </div>
+
+  <div class="panel p-4 mb-4">
+
+   <div class="flex flex-wrap justify-between gap-2 items-center mb-3">
+
+    <div>
+
+     <h3 class="font-bold text-sm">Alert Queue</h3>
+
+     <p class="text-[10px] muted">
+
+      Live REVIEW and BLOCK transactions from existing database records
+
+     </p>
+
+    </div>
+
+    <select id="alertFilter" class="field" onchange="renderAlerts()">
+
+     <option value="ALL">All alerts</option>
+
+     <option value="REVIEW">Review only</option>
+
+     <option value="BLOCK">Blocked only</option>
+
+    </select>
+
+   </div>
+
+   <div class="table-wrap">
+
+    <table>
+
+     <thead>
+
+      <tr>
+
+       <th>TXN ID</th>
+
+       <th>AMOUNT</th>
+
+       <th>PARTIES</th>
+
+       <th>RISK</th>
+
+       <th>DECISION</th>
+
+       <th>TIME</th>
+
+       <th>DETAIL</th>
+
+      </tr>
+
+     </thead>
+
+     <tbody id="alertsBody">
+
+      <tr><td colspan="7" class="loading">Loading alert queue…</td></tr>
+
+     </tbody>
+
+    </table>
+
+   </div>
+
+  </div>
+
+  <div class="panel p-4">
+
+   <h3 class="font-bold text-sm mb-2">Investigation workspace connectivity</h3>
+
+   <div id="investigationStatus" class="text-xs muted">
+
+    Case and report APIs have not yet been connected.
+
+    Existing fraud alerts are displayed above.
+
+   </div>
+
+  </div>
+
+ </section>
+
+ <!-- ADVANCED ANALYTICS -->
+
+ <section id="section-analytics" class="section">
+
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+
+   <div class="metric">
+
+    <div class="text-[10px] muted">TOTAL USERS</div>
+
+    <div id="analyticsUsers" class="text-2xl font-bold mt-2">—</div>
+
+   </div>
+
+   <div class="metric">
+
+    <div class="text-[10px] muted">TOTAL TX VALUE</div>
+
+    <div id="analyticsValue" class="text-2xl font-bold mt-2">—</div>
+
+    <div class="text-[10px] muted">Sum of recorded transaction amounts</div>
+
+   </div>
+
+   <div class="metric">
+
+    <div class="text-[10px] muted">REVIEW RATE</div>
+
+    <div id="analyticsReviewRate" class="text-2xl font-bold mt-2">—</div>
+
+   </div>
+
+   <div class="metric">
+
+    <div class="text-[10px] muted">BLOCK RATE</div>
+
+    <div id="analyticsBlockRate" class="text-2xl font-bold mt-2">—</div>
+
+   </div>
+
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 mb-4">
+
+   <div class="panel p-4">
+
+    <div class="flex justify-between">
+
+     <h3 class="font-bold text-sm">Decision Distribution</h3>
+
+     <span class="tag">FEATURE 01 / 05</span>
+
+    </div>
+
+    <div class="chart-box mt-2">
+
+     <canvas id="analyticsDecisionChart"></canvas>
+
+    </div>
+
+   </div>
+
+   <div class="panel p-4">
+
+    <div class="flex justify-between">
+
+     <h3 class="font-bold text-sm">Transaction Amount Profile</h3>
+
+     <span class="tag">FEATURE 02 / 05</span>
+
+    </div>
+
+    <div class="chart-box mt-2">
+
+     <canvas id="amountChart"></canvas>
+
+    </div>
+
+   </div>
+
+   <div class="panel p-4">
+
+    <div class="flex justify-between">
+
+     <h3 class="font-bold text-sm">Risk Score Distribution</h3>
+
+     <span class="tag">FEATURE 03 / 05</span>
+
+    </div>
+
+    <div class="chart-box mt-2">
+
+     <canvas id="riskChart"></canvas>
+
+    </div>
+
+   </div>
+
+   <div class="panel p-4">
+
+    <div class="flex justify-between">
+
+     <h3 class="font-bold text-sm">Customer Activity Intelligence</h3>
+
+     <span class="tag">FEATURE 04 / 05</span>
+
+    </div>
+
+    <div id="customerInsights" class="space-y-3 mt-4">
+
+     <div class="loading">Loading customer records…</div>
+
+    </div>
+
+   </div>
+
+  </div>
+
+  <div class="panel p-4">
+
+   <div class="flex flex-wrap justify-between gap-2 items-center">
+
+    <div>
+
+     <h3 class="font-bold text-sm">Compliance Data Export</h3>
+
+     <p class="text-[10px] muted mt-1">
+
+      FEATURE 05 / 05 • Export currently loaded transaction records
+
+     </p>
+
+    </div>
+
+    <button class="btn btn-primary" onclick="exportTransactions()">
+
+     <i class="fa-solid fa-file-csv mr-2"></i>Export CSV
+
+    </button>
+
+   </div>
+
+   <p class="text-[10px] muted mt-3">
+
+    This export contains records returned by the current transaction
+
+    endpoint. It is not a regulatory filing or a substitute for a
+
+    verified AML compliance report.
+
+   </p>
+
+  </div>
+
+ </section>
+
+ <!-- EXISTING GUARDIAN FEATURES -->
+
+ <section id="section-transactions" class="section">
+
+  <div class="panel p-4">
+
+   <div class="flex flex-wrap justify-between gap-2 mb-3">
+
+    <div>
+
+     <h3 class="font-bold text-sm">Transaction Management</h3>
+
+     <p class="text-[10px] muted">Existing THE GUARDIAN transaction records</p>
+
+    </div>
+
+    <input id="txSearch" class="field"
+
+           placeholder="Search ID / phone…"
+
+           oninput="renderTransactions()">
+
+   </div>
+
+   <div class="table-wrap">
+
+    <table>
+
+     <thead>
+
+      <tr>
+
+       <th>TXN ID</th>
+
+       <th>AMOUNT</th>
+
+       <th>SENDER</th>
+
+       <th>RECEIVER</th>
+
+       <th>RISK</th>
+
+       <th>DECISION</th>
+
+       <th>TIME</th>
+
+      </tr>
+
+     </thead>
+
+     <tbody id="allTxBody"></tbody>
+
+    </table>
+
+   </div>
+
+  </div>
+
+ </section>
+
+ <section id="section-users" class="section">
+
+  <div class="panel p-4">
+
+   <div class="flex flex-wrap justify-between gap-2 mb-3">
+
+    <div>
+
+     <h3 class="font-bold text-sm">Customer & User Management</h3>
+
+     <p class="text-[10px] muted">Existing registered accounts</p>
+
+    </div>
+
+    <input id="userSearch" class="field"
+
+           placeholder="Search name / phone…"
+
+           oninput="renderUsers()">
+
+   </div>
+
+   <div class="table-wrap">
+
+    <table>
+
+     <thead>
+
+      <tr>
+
+       <th>NAME</th>
+
+       <th>PHONE</th>
+
+       <th>EMAIL</th>
+
+       <th>BALANCE</th>
+
+       <th>STATUS</th>
+
+       <th>LAST LOGIN</th>
+
+       <th>ACTION</th>
+
+      </tr>
+
+     </thead>
+
+     <tbody id="usersBody"></tbody>
+
+    </table>
+
+   </div>
+
+  </div>
+
+ </section>
+
+ <section id="section-activity" class="section">
+
+  <div class="panel p-4">
+
+   <h3 class="font-bold text-sm mb-3">System Activity Audit Log</h3>
+
+   <div id="activityBody" class="space-y-2 max-h-[650px] overflow-y-auto"></div>
+
+  </div>
+
+ </section>
+
+ <section id="section-sessions" class="section">
+
+  <div class="panel p-4">
+
+   <h3 class="font-bold text-sm">Active Sessions & Devices</h3>
+
+   <p class="text-xs muted mt-2">
+
+    Your current backend stores session cookies but does not maintain
+
+    a server-side session registry. A genuine cross-user session list
+
+    is unavailable until session tracking is added.
+
+   </p>
+
+   <div class="mt-4 tag">SESSION TELEMETRY API NOT CONNECTED</div>
+
+  </div>
+
+ </section>
+
+ <section id="section-network" class="section">
+
+  <div class="grid md:grid-cols-2 gap-3">
+
+   <div class="panel p-4">
+
+    <h3 class="font-bold text-sm">Network Telemetry</h3>
+
+    <p class="text-xs muted mt-2">
+
+     Live bandwidth and connection counts are not exposed by the
+
+     current FastAPI application. No synthetic measurements are displayed.
+
+    </p>
+
+    <div class="tag mt-4">NETWORK METRICS API REQUIRED</div>
+
+   </div>
+
+   <div class="panel p-4">
+
+    <h3 class="font-bold text-sm">IP & Geolocation</h3>
+
+    <p class="text-xs muted mt-2">
+
+     The current transaction API does not return verified source IP
+
+     geolocation. The map only plots stored coordinates when supplied
+
+     by the backend.
+
+    </p>
+
+    <div class="tag mt-4">GEOLOCATION DATA REQUIRED</div>
+
+   </div>
+
+  </div>
+
+  <div class="panel p-4 mt-3">
+
+   <h3 class="font-bold text-sm">Service connectivity</h3>
+
+   <div id="connectionList" class="mt-3 text-xs muted">
+
+    Checking API availability…
+
+   </div>
+
+  </div>
+
+ </section>
+
+ <section id="section-security" class="section">
+
+  <div class="grid md:grid-cols-3 gap-3">
+
+   <div class="panel p-5">
+
+    <div class="text-xs muted">Security posture</div>
+
+    <div class="text-2xl font-bold mt-2">NOT SCORED</div>
+
+    <p class="text-xs muted mt-2">
+
+     A defensible score needs measured controls and security events.
+
+     The old hardcoded 92/100 has been removed.
+
+    </p>
+
+   </div>
+
+   <div class="panel p-5">
+
+    <div class="text-xs muted">Blocked transactions</div>
+
+    <div id="sec-blocked" class="text-3xl font-bold mt-2"
+
+         style="color:var(--red)">—</div>
+
+    <p class="text-xs muted mt-2">Fraud-engine BLOCK decisions</p>
+
+   </div>
+
+   <div class="panel p-5">
+
+    <div class="text-xs muted">Review queue</div>
+
+    <div id="sec-review" class="text-3xl font-bold mt-2"
+
+         style="color:var(--amber)">—</div>
+
+    <p class="text-xs muted mt-2">Transactions requiring review</p>
+
+   </div>
+
+  </div>
+
+ </section>
+
+ <section id="section-system" class="section">
+
+  <div class="panel p-5 max-w-3xl">
+
+   <h3 class="font-bold text-sm">System Configuration</h3>
+
+   <p class="text-xs muted mt-2">
+
+    Your existing backend reads fraud thresholds from application
+
+    settings. These controls are read-only here until secure admin
+
+    settings endpoints are implemented.
+
+   </p>
+
+   <div class="grid sm:grid-cols-2 gap-3 mt-4">
+
+    <div class="feature-card">
+
+     <h4>Fraud detection engine</h4>
+
+     <p>Existing detector service connected through transaction analysis.</p>
+
+    </div>
+
+    <div class="feature-card">
+
+     <h4>Audit logging</h4>
+
+     <p>Existing ActivityLog records displayed in the audit section.</p>
+
+    </div>
+
+    <div class="feature-card">
+
+     <h4>Auto-block policy</h4>
+
+     <p>Decision behaviour is controlled by the configured fraud detector thresholds.</p>
+
+    </div>
+
+    <div class="feature-card">
+
+     <h4>Maintenance mode</h4>
+
+     <p>Not available until a backend setting and transaction guard are added.</p>
+
+    </div>
+
+   </div>
+
+  </div>
+
+ </section>
+
+ <footer class="text-center text-[10px] muted py-8">
+
+  VELTRIX AML COMMAND CENTER • POWERED BY THE GUARDIAN • ZAMBIA
+
+ </footer>
+
 </main>
 
+<div id="toast" class="toast"></div>
+
 <script>
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-        document.getElementById('overlay').classList.toggle('show');
+
+const state = {
+
+ stats:null,
+
+ transactions:[],
+
+ activity:[],
+
+ users:[],
+
+ map:null,
+
+ mapLayer:null,
+
+ charts:{},
+
+ api:{},
+
+ reports:[]
+
+};
+
+const $ = id => document.getElementById(id);
+
+function toast(message,kind='info'){
+
+ const el=$('toast');
+
+ el.textContent=message;
+
+ el.style.borderColor=kind==='error'?'#a83a52':'#26718b';
+
+ el.classList.add('show');
+
+ clearTimeout(toast.timer);
+
+ toast.timer=setTimeout(()=>el.classList.remove('show'),3600);
+
+}
+
+function safeText(value){
+
+ return String(value??'').replace(/[&<>"']/g,c=>({
+
+  '&':'&amp;',
+
+  '<':'&lt;',
+
+  '>':'&gt;',
+
+  '"':'&quot;',
+
+  "'":'&#39;'
+
+ }[c]));
+
+}
+
+function fmtMoney(v){
+
+ return 'ZMW '+Number(v||0).toLocaleString('en-ZM',{
+
+  minimumFractionDigits:2,
+
+  maximumFractionDigits:2
+
+ });
+
+}
+
+function decisionPill(d){
+
+ const v=String(d||'ALLOW').toUpperCase();
+
+ return `<span class="pill ${v==='BLOCK'?'block':v==='REVIEW'?'review':'allow'}">${safeText(v)}</span>`;
+
+}
+
+function showSection(name,el){
+
+ document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+
+ $('section-'+name)?.classList.add('active');
+
+ document.querySelectorAll('.nav-item[data-section]').forEach(x=>{
+
+  x.classList.toggle('active',x.dataset.section===name);
+
+ });
+
+ $('pageTitle').textContent=({
+
+  executive:'Executive Command',
+
+  threat:'Global Threat Intelligence',
+
+  alerts:'Alerts & Investigation',
+
+  analytics:'Advanced Analytics',
+
+  transactions:'Transaction Management',
+
+  users:'User Management',
+
+  activity:'Activity Audit Log',
+
+  sessions:'Active Sessions',
+
+  network:'Network Monitor',
+
+  security:'Security Posture',
+
+  system:'System Settings'
+
+ })[name]||name;
+
+ if(name==='threat')setTimeout(initMap,100);
+
+ $('sidebar').classList.remove('open');
+
+ $('overlay').classList.remove('show');
+
+}
+
+function toggleSidebar(){
+
+ $('sidebar').classList.toggle('open');
+
+ $('overlay').classList.toggle('show');
+
+}
+
+async function apiGet(url){
+
+ const r=await fetch(url,{
+
+  credentials:'same-origin',
+
+  headers:{'Accept':'application/json'}
+
+ });
+
+ if(r.status===401||r.status===403){
+
+  throw new Error('Admin access denied. Sign in again with an administrator account.');
+
+ }
+
+ if(!r.ok)throw new Error(`${url} returned HTTP ${r.status}`);
+
+ return r.json();
+
+}
+
+async function loadAllData(){
+
+ $('apiStatus').textContent='SYNCING';
+
+ $('apiStatus').style.color='var(--amber)';
+
+ const endpoints=[
+
+  ['stats','/api/v1/dashboard/stats'],
+
+  ['recent','/api/v1/dashboard/recent'],
+
+  ['activity','/api/v1/admin/activity'],
+
+  ['users','/api/v1/admin/users']
+
+ ];
+
+ const results=await Promise.all(
+
+  endpoints.map(async([k,u])=>{
+
+   try{
+
+    return [k,await apiGet(u),true];
+
+   }catch(e){
+
+    return [k,e.message,false];
+
+   }
+
+  })
+
+ );
+
+ let good=0;
+
+ for(const [k,v,ok] of results){
+
+  state.api[k]=ok;
+
+  if(ok){
+
+   state[k==='recent'?'transactions':k]=v;
+
+   good++;
+
+  }else if(k==='stats'){
+
+   state.stats=null;
+
+  }
+
+ }
+
+ if(state.api.stats){
+
+  state.stats=state.stats||{};
+
+  renderStats();
+
+ }else{
+
+  toast('Dashboard statistics could not be loaded. Check admin authentication and backend.','error');
+
+ }
+
+ if(state.api.recent)renderTransactions();
+
+ if(state.api.activity)renderActivity();
+
+ if(state.api.users)renderUsers();
+
+ renderAlerts();
+
+ renderAnalytics();
+
+ renderThreatSignals();
+
+ renderOriginList();
+
+ updateMap();
+
+ $('apiStatus').textContent=good===4
+
+  ?'DATABASE CONNECTED'
+
+  :`PARTIAL CONNECTION ${good}/4`;
+
+ $('apiStatus').style.color=good===4
+
+  ?'var(--green)'
+
+  :'var(--amber)';
+
+ $('lastUpdated').textContent='UPDATED '+new Date().toLocaleTimeString();
+
+ $('connectionList').innerHTML=endpoints.map(([k,u])=>`
+
+  <div class="flex justify-between py-2 border-b" style="border-color:var(--line)">
+
+   <span>${safeText(k.toUpperCase())}</span>
+
+   <span style="color:${state.api[k]?'var(--green)':'var(--red)'}">
+
+    ${state.api[k]?'CONNECTED':'UNAVAILABLE'}
+
+   </span>
+
+  </div>
+
+ `).join('');
+
+}
+
+function renderStats(){
+
+ const s=state.stats||{};
+
+ for(const [id,key] of [
+
+  ['stat-total','total_transactions'],
+
+  ['stat-allowed','allowed'],
+
+  ['stat-review','review'],
+
+  ['stat-blocked','blocked'],
+
+  ['sec-blocked','blocked'],
+
+  ['sec-review','review'],
+
+  ['alertBlocked','blocked'],
+
+  ['alertReview','review']
+
+ ]){
+
+  $(id).textContent=Number(s[key]||0).toLocaleString();
+
+ }
+
+ $('allowedPct').textContent=`${s.allowed_percentage??0}% of recorded decisions`;
+
+ $('blockedPct').textContent=`${s.blocked_percentage??0}% of recorded decisions`;
+
+ $('analyticsReviewRate').textContent=`${s.review_percentage??0}%`;
+
+ $('analyticsBlockRate').textContent=`${s.blocked_percentage??0}%`;
+
+ drawDecisionCharts();
+
+}
+
+function txRow(tx,alert=false){
+
+ const risk=Number(tx.risk_score??0);
+
+ return `
+
+  <tr>
+
+   <td class="mono" style="color:var(--cyan)">
+
+    ${safeText(tx.transaction_id||'N/A')}
+
+   </td>
+
+   <td>${fmtMoney(tx.amount)}</td>
+
+   ${alert?'':`
+
+    <td>${safeText(tx.sender||'—')}</td>
+
+    <td>${safeText(tx.receiver||'—')}</td>
+
+   `}
+
+   <td>${risk.toFixed(2)}</td>
+
+   <td>${decisionPill(tx.decision)}</td>
+
+   <td>${safeText(tx.time||'—')}</td>
+
+   ${alert?`
+
+    <td>
+
+     <button class="btn" onclick="inspectTransaction('${encodeURIComponent(String(tx.transaction_id||''))}')">
+
+      Inspect
+
+     </button>
+
+    </td>
+
+   `:''}
+
+  </tr>
+
+ `;
+
+}
+
+function renderTransactions(){
+
+ const list=state.transactions||[];
+
+ const recent=list.slice(0,10);
+
+ $('recentTxBody').innerHTML=recent.length
+
+  ?recent.map(t=>`
+
+   <tr>
+
+    <td class="mono" style="color:var(--cyan)">${safeText(t.transaction_id||'N/A')}</td>
+
+    <td>${fmtMoney(t.amount)}</td>
+
+    <td>${safeText(t.sender||'—')}</td>
+
+    <td>${safeText(t.receiver||'—')}</td>
+
+    <td>${Number(t.risk_score||0).toFixed(2)}</td>
+
+    <td>${decisionPill(t.decision)}</td>
+
+    <td>${safeText(t.time||'—')}</td>
+
+   </tr>
+
+  `).join('')
+
+  :'<tr><td colspan="7" class="loading">No transaction records returned.</td></tr>';
+
+ const q=($('txSearch')?.value||'').toLowerCase();
+
+ const filtered=list.filter(t=>
+
+  [t.transaction_id,t.sender,t.receiver].join(' ').toLowerCase().includes(q)
+
+ );
+
+ $('allTxBody').innerHTML=filtered.length
+
+  ?filtered.map(t=>txRow(t)).join('')
+
+  :'<tr><td colspan="7" class="loading">No matching transactions.</td></tr>';
+
+}
+
+function renderActivity(){
+
+ const list=state.activity||[];
+
+ $('activityBody').innerHTML=list.length
+
+  ?list.map(a=>`
+
+   <div class="p-3 rounded-lg" style="background:#081522;border:1px solid var(--line)">
+
+    <div class="flex justify-between gap-3">
+
+     <b class="text-xs" style="color:var(--green)">${safeText(a.action)}</b>
+
+     <span class="text-[10px] muted">${safeText(a.time)}</span>
+
+    </div>
+
+    <div class="text-xs muted mt-1">
+
+     ${safeText(a.user_phone||'System')} • ${safeText(a.details||'')}
+
+    </div>
+
+   </div>
+
+  `).join('')
+
+  :'<div class="loading">No activity records returned.</div>';
+
+ $('liveActivity').innerHTML=list.slice(0,14).map(a=>`
+
+  <div class="p-2 rounded" style="background:#081522">
+
+   <div class="flex justify-between gap-2">
+
+    <b class="text-[11px]" style="color:var(--green)">${safeText(a.action)}</b>
+
+    <span class="text-[9px] muted">${safeText(a.time)}</span>
+
+   </div>
+
+   <p class="text-[10px] muted mt-1">${safeText(a.details||'')}</p>
+
+  </div>
+
+ `).join('')||'<div class="loading">No audit events recorded.</div>';
+
+ $('latestActivityFeature').textContent=list[0]?.action||'No audit events yet';
+
+}
+
+function renderUsers(){
+
+ const list=state.users||[];
+
+ $('userCountFeature').textContent=list.length;
+
+ $('analyticsUsers').textContent=list.length;
+
+ const q=($('userSearch')?.value||'').toLowerCase();
+
+ const filtered=list.filter(u=>
+
+  [u.full_name,u.username,u.phone,u.email].join(' ').toLowerCase().includes(q)
+
+ );
+
+ $('usersBody').innerHTML=filtered.length
+
+  ?filtered.map(u=>`
+
+   <tr>
+
+    <td>${safeText(u.full_name||u.username)}</td>
+
+    <td class="mono">${safeText(u.phone||'—')}</td>
+
+    <td>${safeText(u.email||'—')}</td>
+
+    <td>${fmtMoney(u.balance)}</td>
+
+    <td>
+
+     ${u.is_active
+
+      ?'<span class="pill allow">ACTIVE</span>'
+
+      :'<span class="pill block">INACTIVE</span>'}
+
+    </td>
+
+    <td>${safeText(u.last_login||'Never')}</td>
+
+    <td>
+
+     <button class="btn" onclick="deleteUser(${Number(u.id)})" style="color:var(--red)">
+
+      Delete
+
+     </button>
+
+    </td>
+
+   </tr>
+
+  `).join('')
+
+  :'<tr><td colspan="7" class="loading">No matching user records.</td></tr>';
+
+ $('customerInsights').innerHTML=`
+
+  <div class="flex justify-between">
+
+   <span class="muted text-xs">Registered users</span>
+
+   <b>${list.length}</b>
+
+  </div>
+
+  <div class="flex justify-between">
+
+   <span class="muted text-xs">Active accounts</span>
+
+   <b>${list.filter(u=>u.is_active).length}</b>
+
+  </div>
+
+  <div class="flex justify-between">
+
+   <span class="muted text-xs">Inactive accounts</span>
+
+   <b>${list.filter(u=>!u.is_active).length}</b>
+
+  </div>
+
+  <div class="text-[10px] muted mt-3">
+
+   Based on current user records returned by the API.
+
+  </div>
+
+ `;
+
+}
+
+function renderAlerts(){
+
+ const list=(state.transactions||[]).filter(t=>
+
+  ['BLOCK','REVIEW'].includes(String(t.decision||'').toUpperCase())
+
+ );
+
+ $('alertNavCount').textContent=list.length;
+
+ const f=$('alertFilter')?.value||'ALL';
+
+ const filtered=list.filter(t=>
+
+  f==='ALL'||String(t.decision).toUpperCase()===f
+
+ );
+
+ $('alertsBody').innerHTML=filtered.length
+
+  ?filtered.map(t=>`
+
+   <tr>
+
+    <td class="mono" style="color:var(--cyan)">${safeText(t.transaction_id||'N/A')}</td>
+
+    <td>${fmtMoney(t.amount)}</td>
+
+    <td>${safeText(t.sender||'—')} → ${safeText(t.receiver||'—')}</td>
+
+    <td>${Number(t.risk_score||0).toFixed(2)}</td>
+
+    <td>${decisionPill(t.decision)}</td>
+
+    <td>${safeText(t.time||'—')}</td>
+
+    <td>
+
+     <button class="btn" onclick="inspectTransaction('${encodeURIComponent(String(t.transaction_id||''))}')">
+
+      Inspect
+
+     </button>
+
+    </td>
+
+   </tr>
+
+  `).join('')
+
+  :'<tr><td colspan="7" class="loading">No alerts in the loaded transaction records.</td></tr>';
+
+ $('investigationStatus').textContent=
+
+  'Existing transaction alerts are available. Case assignment, investigation notes and report disposition require additional backend endpoints.';
+
+ $('reportCount').textContent='API REQUIRED';
+
+}
+
+function inspectTransaction(encoded){
+
+ const id=decodeURIComponent(encoded);
+
+ const t=state.transactions.find(x=>x.transaction_id===id);
+
+ if(!t){
+
+  return toast('Transaction record is no longer in the loaded data.','error');
+
+ }
+
+ toast(
+
+  `TXN ${t.transaction_id} | ${t.decision} | Risk ${t.risk_score} | ${fmtMoney(t.amount)} | ${t.sender||'—'} → ${t.receiver||'—'}`
+
+ );
+
+}
+
+async function deleteUser(id){
+
+ if(!confirm('Permanently delete this user? This action cannot be undone.'))return;
+
+ try{
+
+  const r=await fetch(`/api/v1/admin/users/${id}`,{
+
+   method:'DELETE',
+
+   credentials:'same-origin'
+
+  });
+
+  if(!r.ok)throw new Error(`HTTP ${r.status}`);
+
+  toast('User deletion request completed.');
+
+  await loadAllData();
+
+ }catch(e){
+
+  toast('User deletion failed: '+e.message,'error');
+
+ }
+
+}
+
+function drawDecisionCharts(){
+
+ const s=state.stats||{};
+
+ const vals=[
+
+  Number(s.allowed||0),
+
+  Number(s.review||0),
+
+  Number(s.blocked||0)
+
+ ];
+
+ [['decisionChart','doughnut'],['analyticsDecisionChart','bar']].forEach(([id,type])=>{
+
+  const c=$(id);
+
+  if(!c)return;
+
+  state.charts[id]?.destroy();
+
+  state.charts[id]=new Chart(c,{
+
+   type,
+
+   data:{
+
+    labels:['ALLOW','REVIEW','BLOCK'],
+
+    datasets:[{
+
+     data:vals,
+
+     backgroundColor:['#00c995','#f5bd4f','#ff5470'],
+
+     borderColor:'#0b1422',
+
+     borderWidth:2
+
+    }]
+
+   },
+
+   options:{
+
+    responsive:true,
+
+    maintainAspectRatio:false,
+
+    plugins:{
+
+     legend:{
+
+      labels:{
+
+       color:'#9aabc0',
+
+       font:{size:10}
+
+      }
+
+     }
+
+    },
+
+    scales:type==='bar'?{
+
+     x:{ticks:{color:'#9aabc0'},grid:{color:'#1a2a3b'}},
+
+     y:{beginAtZero:true,ticks:{color:'#9aabc0'},grid:{color:'#1a2a3b'}}
+
+    }:{}
+
+   }
+
+  });
+
+ });
+
+}
+
+function renderAnalytics(){
+
+ const list=state.transactions||[];
+
+ $('analyticsValue').textContent=fmtMoney(
+
+  list.reduce((n,t)=>n+Number(t.amount||0),0)
+
+ );
+
+ const bins=[0,0,0,0,0];
+
+ list.forEach(t=>{
+
+  const r=Number(t.risk_score||0);
+
+  bins[Math.min(4,Math.max(0,Math.floor(r*5)))]++;
+
+ });
+
+ const c=$('riskChart');
+
+ if(c){
+
+  state.charts.riskChart?.destroy();
+
+  state.charts.riskChart=new Chart(c,{
+
+   type:'bar',
+
+   data:{
+
+    labels:['0–0.19','0.20–0.39','0.40–0.59','0.60–0.79','0.80–1.00'],
+
+    datasets:[{
+
+     label:'Transactions',
+
+     data:bins,
+
+     backgroundColor:'#31b9db'
+
+    }]
+
+   },
+
+   options:chartOptions()
+
+  });
+
+ }
+
+ const ac=$('amountChart');
+
+ if(ac){
+
+  const amounts=list.map(t=>Number(t.amount||0)).filter(x=>Number.isFinite(x));
+
+  const ranges=[0,0,0,0];
+
+  amounts.forEach(x=>{
+
+   ranges[x<500?0:x<2000?1:x<5000?2:3]++;
+
+  });
+
+  state.charts.amountChart?.destroy();
+
+  state.charts.amountChart=new Chart(ac,{
+
+   type:'bar',
+
+   data:{
+
+    labels:['< K500','K500–1,999','K2,000–4,999','K5,000+'],
+
+    datasets:[{
+
+     label:'Transactions',
+
+     data:ranges,
+
+     backgroundColor:'#00c995'
+
+    }]
+
+   },
+
+   options:chartOptions()
+
+  });
+
+ }
+
+}
+
+function chartOptions(){
+
+ return{
+
+  responsive:true,
+
+  maintainAspectRatio:false,
+
+  plugins:{
+
+   legend:{
+
+    labels:{
+
+     color:'#9aabc0',
+
+     font:{size:10}
+
     }
 
-    function showSection(name, el) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById('section-' + name).classList.add('active');
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        if (el) el.classList.add('active');
-        document.getElementById('sidebar').classList.remove('open');
-        document.getElementById('overlay').classList.remove('show');
-    }
+   }
 
-    function updateNetwork() {
-        document.getElementById('net-in').textContent = (Math.random() * 1.8 + 0.6).toFixed(1) + ' MB/s';
-        document.getElementById('net-out').textContent = (Math.random() * 1.2 + 0.4).toFixed(1) + ' MB/s';
-        document.getElementById('net-conn').textContent = Math.floor(Math.random() * 25 + 40);
-        document.getElementById('last-ip').textContent = '41.77.' + Math.floor(Math.random()*200+20) + '.' + Math.floor(Math.random()*200+10);
-    }
+  },
 
-    async function loadAllData() {
-        try {
-            const [statsRes, recentRes, activityRes, usersRes] = await Promise.all([
-                fetch('/api/v1/dashboard/stats'),
-                fetch('/api/v1/dashboard/recent'),
-                fetch('/api/v1/admin/activity'),
-                fetch('/api/v1/admin/users')
-            ]);
+  scales:{
 
-            const stats = await statsRes.json();
-            const recent = await recentRes.json();
-            const activity = await activityRes.json();
-            const users = await usersRes.json();
+   x:{
 
-            document.getElementById('stat-total').textContent = stats.total_transactions || 0;
-            document.getElementById('stat-allowed').textContent = stats.allowed || 0;
-            document.getElementById('stat-review').textContent = stats.review || 0;
-            document.getElementById('stat-blocked').textContent = stats.blocked || 0;
-            document.getElementById('sec-blocked').textContent = stats.blocked || 0;
+    ticks:{color:'#9aabc0'},
 
-            const txRows = (recent || []).map(tx => `
-                <tr class="border-b border-green-900/20 hover:bg-white/5">
-                    <td class="py-2.5 text-cyan-300 text-xs font-mono">${tx.transaction_id || 'N/A'}</td>
-                    <td class="py-2.5">ZMW ${Number(tx.amount || 0).toLocaleString()}</td>
-                    <td class="py-2.5">${tx.risk_score ?? '—'}</td>
-                    <td class="py-2.5">
-                        <span class="px-2 py-0.5 rounded text-xs font-medium ${
-                            tx.decision === 'BLOCK' ? 'bg-red-500/20 text-red-400' :
-                            tx.decision === 'REVIEW' ? 'bg-yellow-500/20 text-yellow-400' :
-                            'bg-green-500/20 text-green-400'
-                        }">${tx.decision || 'ALLOW'}</span>
-                    </td>
-                </tr>
-            `).join('') || `<tr><td colspan="4" class="py-6 text-center text-gray-500">No transactions yet</td></tr>`;
+    grid:{color:'#1a2a3b'}
 
-            document.getElementById('recentTxBody').innerHTML = txRows;
-            document.getElementById('allTxBody').innerHTML = txRows;
+   },
 
-            const actHtml = (activity || []).map(a => `
-                <div class="p-3 rounded-lg bg-black/30 border border-green-900/20">
-                    <div class="flex justify-between items-start">
-                        <span class="text-green-400 font-medium">${a.action}</span>
-                        <span class="text-gray-500 text-xs">${a.time}</span>
-                    </div>
-                    <p class="text-gray-400 text-xs mt-1">${a.details || ''}</p>
-                </div>
-            `).join('') || `<p class="text-gray-500 text-sm">No activity recorded yet</p>`;
+   y:{
 
-            document.getElementById('liveActivity').innerHTML = actHtml;
-            document.getElementById('activityBody').innerHTML = actHtml;
+    beginAtZero:true,
 
-            document.getElementById('usersBody').innerHTML = (users || []).map(u => `
-                <tr class="border-b border-green-900/20">
-                    <td class="py-2.5">${u.full_name || u.username}</td>
-                    <td class="py-2.5 text-cyan-300">${u.phone}</td>
-                    <td class="py-2.5 text-green-400">K${Number(u.balance || 0).toFixed(2)}</td>
-                    <td class="py-2.5">
-                        <button onclick="deleteUser(${u.id})" class="px-2.5 py-1 rounded text-xs bg-red-500/15 border border-red-500/40 text-red-400">Delete</button>
-                    </td>
-                </tr>
-            `).join('') || `<tr><td colspan="4" class="py-6 text-center text-gray-500">No users found</td></tr>`;
+    ticks:{color:'#9aabc0'},
 
-            document.getElementById('sessionsBody').innerHTML = `
-                <div class="p-3 rounded-lg bg-black/30 border border-green-900/20">
-                    <div class="flex justify-between">
-                        <span class="text-green-400 font-medium">Admin • Chrome</span>
-                        <span class="text-xs text-green-400">Active now</span>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-1">Lusaka, Zambia • This device</p>
-                </div>
-                <div class="p-3 rounded-lg bg-black/30 border border-green-900/20">
-                    <div class="flex justify-between">
-                        <span class="text-cyan-300">User Session</span>
-                        <span class="text-xs text-gray-400">Recently active</span>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-1">Mobile Browser • Zambia</p>
-                </div>
-            `;
+    grid:{color:'#1a2a3b'}
 
-            document.getElementById('connectionList').innerHTML = `
-                <div class="flex justify-between py-2 border-b border-green-900/20">
-                    <span>Admin Dashboard</span>
-                    <span class="text-green-400 text-xs">Active</span>
-                </div>
-                <div class="flex justify-between py-2 border-b border-green-900/20">
-                    <span>User Portal</span>
-                    <span class="text-green-400 text-xs">Active</span>
-                </div>
-                <div class="flex justify-between py-2">
-                    <span>API Endpoints</span>
-                    <span class="text-green-400 text-xs">Healthy</span>
-                </div>
-            `;
+   }
 
-        } catch (err) {
-            console.error(err);
-        }
-    }
+  }
 
-    async function deleteUser(id) {
-        if (!confirm('Delete this user permanently?')) return;
-        const res = await fetch(`/api/v1/admin/users/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-            alert('User deleted successfully');
-            loadAllData();
-        } else {
-            alert('Failed to delete user');
-        }
-    }
+ };
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadAllData();
-        updateNetwork();
-        setInterval(loadAllData, 20000);
-        setInterval(updateNetwork, 5000);
-    });
+}
+
+function renderThreatSignals(){
+
+ const s=state.stats||{};
+
+ $('threatSignals').innerHTML=[
+
+  ['Blocked decisions',s.blocked||0,'var(--red)'],
+
+  ['Transactions for review',s.review||0,'var(--amber)'],
+
+  ['Allowed transactions',s.allowed||0,'var(--green)']
+
+ ].map(([label,n,color])=>`
+
+  <div>
+
+   <div class="flex justify-between text-xs">
+
+    <span class="muted">${label}</span>
+
+    <b style="color:${color}">${n}</b>
+
+   </div>
+
+   <div class="h-1.5 rounded mt-2" style="background:#1b2a3a">
+
+    <div class="h-1.5 rounded"
+
+         style="width:${Math.min(100,Number(n)/Math.max(1,Number(s.total_transactions||1))*100)}%;background:${color}">
+
+    </div>
+
+   </div>
+
+  </div>
+
+ `).join('');
+
+}
+
+function renderOriginList(){
+
+ const locs={};
+
+ (state.transactions||[]).forEach(t=>{
+
+  if(t.location){
+
+   const k=String(t.location);
+
+   locs[k]=(locs[k]||0)+1;
+
+  }
+
+ });
+
+ const entries=Object.entries(locs)
+
+  .sort((a,b)=>b[1]-a[1])
+
+  .slice(0,8);
+
+ $('originList').innerHTML=entries.length
+
+  ?entries.map(([name,n])=>`
+
+   <div class="flex justify-between text-xs py-2 border-b"
+
+        style="border-color:var(--line)">
+
+    <span>${safeText(name)}</span>
+
+    <b>${n} records</b>
+
+   </div>
+
+  `).join('')
+
+  :'<div class="loading">No transaction location values were returned by the current API.</div>';
+
+}
+
+function initMap(){
+
+ if(state.map||!window.L)return;
+
+ state.map=L.map('threatMap',{
+
+  zoomControl:true
+
+ }).setView([-13.1339,27.8493],5);
+
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+
+  maxZoom:18,
+
+  attribution:'&copy; OpenStreetMap'
+
+ }).addTo(state.map);
+
+ state.mapLayer=L.layerGroup().addTo(state.map);
+
+ updateMap();
+
+}
+
+function updateMap(){
+
+ if(!state.mapLayer)return;
+
+ state.mapLayer.clearLayers();
+
+ const geo=(state.transactions||[]).filter(t=>
+
+  Number.isFinite(Number(t.latitude))&&
+
+  Number.isFinite(Number(t.longitude))&&
+
+  t.latitude!==null&&
+
+  t.longitude!==null
+
+ );
+
+ geo.forEach(t=>{
+
+  const d=String(t.decision||'ALLOW').toUpperCase();
+
+  const color=d==='BLOCK'
+
+   ?'#ff5470'
+
+   :d==='REVIEW'
+
+    ?'#f5bd4f'
+
+    :'#00e6a0';
+
+  L.circleMarker(
+
+   [Number(t.latitude),Number(t.longitude)],
+
+   {
+
+    radius:7,
+
+    color,
+
+    fillColor:color,
+
+    fillOpacity:.75
+
+   }
+
+  )
+
+  .bindPopup(`
+
+   <b>${safeText(t.transaction_id)}</b><br>
+
+   ${safeText(d)}<br>
+
+   ${fmtMoney(t.amount)}<br>
+
+   Risk: ${safeText(t.risk_score)}
+
+  `)
+
+  .addTo(state.mapLayer);
+
+ });
+
+ $('mapCount').textContent=geo.length
+
+  ?`${geo.length} geolocated events`
+
+  :'0 geolocated events • API currently omits coordinates';
+
+}
+
+function exportTransactions(){
+
+ const rows=state.transactions||[];
+
+ if(!rows.length){
+
+  return toast('No transaction records available to export.','error');
+
+ }
+
+ const cols=[
+
+  'transaction_id',
+
+  'amount',
+
+  'currency',
+
+  'sender',
+
+  'receiver',
+
+  'risk_score',
+
+  'decision',
+
+  'time'
+
+ ];
+
+ const csv=[
+
+  cols.join(','),
+
+  ...rows.map(r=>
+
+   cols.map(k=>
+
+    '"'+String(r[k]??'').replace(/"/g,'""')+'"'
+
+   ).join(',')
+
+  )
+
+ ].join('\r\n');
+
+ const blob=new Blob([csv],{
+
+  type:'text/csv;charset=utf-8'
+
+ });
+
+ const url=URL.createObjectURL(blob);
+
+ const a=document.createElement('a');
+
+ a.href=url;
+
+ a.download='guardian-transactions.csv';
+
+ a.click();
+
+ URL.revokeObjectURL(url);
+
+ toast(`Exported ${rows.length} loaded transaction records.`);
+
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+
+ loadAllData();
+
+ setInterval(loadAllData,20000);
+
+});
+
 </script>
+
 </body>
+
 </html>
