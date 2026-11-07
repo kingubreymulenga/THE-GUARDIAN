@@ -1,1831 +1,534 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0f19">
-<title>THE GUARDIAN // User Portal</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
-
-:root {
-    --bg:#0b0f19;
-    --panel:#111827;
-    --panel2:#0f172a;
-    --green:#00ff9f;
-    --cyan:#22d3ee;
-    --red:#ff5277;
-    --yellow:#facc15;
-    --muted:#94a3b8;
-    --border:rgba(0,255,159,.17);
-}
-
-* { box-sizing:border-box; }
-
-html {
-    min-height:100%;
-    background:var(--bg);
-    overflow-x:hidden;
-    scroll-behavior:smooth;
-}
-
-body {
-    margin:0;
-    min-height:100vh;
-    background:var(--bg);
-    color:#e2e8f0;
-    font-family:Inter,system-ui,sans-serif;
-    overflow-x:hidden;
-    padding-bottom:90px;
-}
-
-button,input,textarea,select { font:inherit; }
-
-button,a,input,textarea,select {
-    touch-action:manipulation;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-    outline:2px solid var(--green);
-    outline-offset:3px;
-}
-
-.mono { font-family:'Share Tech Mono',monospace; }
-
-#wallpaper {
-    position:fixed;
-    inset:0;
-    width:100%;
-    height:100%;
-    z-index:0;
-    opacity:.12;
-    pointer-events:none;
-}
-
-.content {
-    position:relative;
-    z-index:2;
-    width:100%;
-    max-width:1200px;
-    margin:auto;
-}
-
-.card {
-    background:rgba(17,24,39,.94);
-    border:1px solid var(--border);
-    border-radius:16px;
-    min-width:0;
-}
-
-.section { display:none; }
-
-.section.active {
-    display:block;
-    animation:fadeIn .18s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity:.6; transform:translateY(4px); }
-    to { opacity:1; transform:none; }
-}
-
-.bottom-nav {
-    position:fixed;
-    bottom:0;
-    left:0;
-    right:0;
-    z-index:50;
-    display:grid;
-    grid-template-columns:repeat(5,minmax(0,1fr));
-    background:rgba(15,23,42,.97);
-    border-top:1px solid #1e293b;
-    padding:9px 4px calc(9px + env(safe-area-inset-bottom));
-    backdrop-filter:blur(15px);
-}
-
-.nav-item {
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:5px;
-    color:#64748b;
-    font-size:10px;
-    cursor:pointer;
-    border:0;
-    background:transparent;
-    padding:7px 2px;
-    min-width:0;
-}
-
-.nav-item i { font-size:18px; }
-
-.nav-item.active,
-.nav-item:hover {
-    color:var(--green);
-}
-
-.field {
-    width:100%;
-    margin-top:6px;
-    padding:12px 13px;
-    border-radius:9px;
-    background:rgba(0,0,0,.4);
-    border:1px solid rgba(148,163,184,.25);
-    color:white;
-    min-width:0;
-}
-
-.field:focus {
-    outline:none;
-    border-color:var(--green);
-}
-
-.field-label {
-    display:block;
-    color:#94a3b8;
-    font-size:12px;
-}
-
-.btn-primary {
-    background:rgba(0,255,159,.13);
-    border:1px solid rgba(0,255,159,.4);
-    color:var(--green);
-}
-
-.btn-primary:hover { background:rgba(0,255,159,.22); }
-
-.btn-neutral {
-    background:#111827;
-    border:1px solid #334155;
-    color:#e2e8f0;
-}
-
-.btn-danger {
-    background:rgba(255,42,109,.12);
-    border:1px solid rgba(255,42,109,.4);
-    color:#ff668f;
-}
-
-.result-box {
-    display:none;
-    margin-top:12px;
-    padding:12px;
-    border-radius:9px;
-    font-size:13px;
-    overflow-wrap:anywhere;
-}
-
-.result-success {
-    display:block;
-    background:rgba(0,255,159,.08);
-    border:1px solid rgba(0,255,159,.3);
-    color:var(--green);
-}
-
-.result-error {
-    display:block;
-    background:rgba(255,42,109,.08);
-    border:1px solid rgba(255,42,109,.3);
-    color:#ff668f;
-}
-
-.muted { color:var(--muted); }
-
-.badge {
-    display:inline-block;
-    padding:4px 9px;
-    border-radius:20px;
-    font-size:10px;
-    font-weight:700;
-}
-
-.badge-green {
-    color:var(--green);
-    background:rgba(0,255,159,.12);
-}
-
-.badge-red {
-    color:#ff668f;
-    background:rgba(255,42,109,.12);
-}
-
-.badge-yellow {
-    color:var(--yellow);
-    background:rgba(250,204,21,.12);
-}
-
-.chat-bubble {
-    max-width:88%;
-    padding:12px 15px;
-    border-radius:15px;
-    margin-bottom:12px;
-    font-size:13px;
-    line-height:1.6;
-    overflow-wrap:anywhere;
-    white-space:pre-wrap;
-}
-
-.chat-user {
-    background:rgba(0,255,159,.13);
-    border:1px solid rgba(0,255,159,.3);
-    margin-left:auto;
-}
-
-.chat-ai {
-    background:#1e293b;
-    border:1px solid #334155;
-    margin-right:auto;
-}
-
-.table-wrap {
-    width:100%;
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-}
-
-table {
-    width:100%;
-    min-width:550px;
-    border-collapse:collapse;
-}
-
-th,td {
-    padding:12px 10px;
-    text-align:left;
-    border-bottom:1px solid rgba(148,163,184,.12);
-    font-size:12px;
-}
-
-th { color:#94a3b8; }
-
-.notice {
-    background:rgba(250,204,21,.07);
-    border:1px solid rgba(250,204,21,.25);
-    color:#facc15;
-    border-radius:10px;
-    padding:12px;
-    font-size:12px;
-    line-height:1.6;
-}
-
-.loading {
-    color:#94a3b8;
-    font-size:13px;
-    padding:15px 0;
-}
-
-@media(min-width:768px) {
-    body { padding-bottom:30px; }
-
-    .bottom-nav {
-        position:static;
-        max-width:1200px;
-        margin:20px auto 0;
-        border:1px solid var(--border);
-        border-radius:14px;
-        padding:10px;
-    }
-
-    .nav-item {
-        flex-direction:row;
-        font-size:13px;
-        gap:9px;
-    }
-
-    .nav-item i { font-size:15px; }
-}
-
-@media(max-width:380px) {
-    .nav-item { font-size:9px; }
-    .nav-item i { font-size:16px; }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>THE GUARDIAN // User Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0b0f19;
+            color: #e2e8f0;
+            margin: 0;
+            padding-bottom: 75px;
+        }
+        #wallpaper {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            opacity: 0.12;
+            pointer-events: none;
+        }
+        .content { position: relative; z-index: 10; }
+        .card {
+            background: rgba(17, 24, 39, 0.92);
+            border: 1px solid #1f2937;
+            border-radius: 16px;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #0f172a;
+            border-top: 1px solid #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 50;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            color: #64748b;
+            gap: 3px;
+        }
+        .nav-item.active { color: #00ff9f; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .chat-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .chat-user {
+            background: rgba(0, 255, 159, 0.15);
+            border: 1px solid rgba(0, 255, 159, 0.3);
+            margin-left: auto;
+        }
+        .chat-ai {
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+    </style>
 </head>
-
 <body>
+    <canvas id="wallpaper"></canvas>
 
-<canvas id="wallpaper"></canvas>
-
-<div class="content">
-
-<!-- HEADER -->
-<header class="px-4 pt-5 pb-4">
-    <div class="flex justify-between items-center gap-3">
-        <div class="min-w-0">
-            <p class="text-gray-400 text-xs">WELCOME BACK</p>
-            <h1 class="text-xl font-bold truncate" id="userFullName">User</h1>
-            <p class="text-xs text-gray-500 mt-1">THE GUARDIAN // USER PORTAL</p>
+    <div class="content">
+        <!-- Header -->
+        <div class="px-4 pt-5 pb-3">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-gray-400 text-sm">Welcome back</p>
+                    <h1 class="text-xl font-bold" id="userFullName">User</h1>
+                </div>
+                <div class="flex items-center gap-2 bg-green-500/10 border border-green-500/30 px-3 py-1 rounded-full">
+                    <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    <span class="text-green-400 text-xs">PROTECTED</span>
+                </div>
+            </div>
         </div>
 
-        <div class="flex items-center gap-2 bg-green-500/10 border border-green-500/30 px-3 py-2 rounded-full shrink-0">
-            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            <span class="text-green-400 text-xs">PROTECTED</span>
-        </div>
-    </div>
-</header>
-
-<main class="px-3 sm:px-4">
-
-<!-- ================= HOME ================= -->
-<section id="section-home" class="section active">
-
-    <div class="card p-5 mb-4 text-center">
-        <p class="text-gray-400 text-sm">Internal Wallet Balance</p>
-
-        <h2 class="text-3xl font-bold text-green-400 my-2" id="balanceDisplay">
-            ZMW 0.00
-        </h2>
-
-        <p class="text-xs text-gray-500">
-            THE GUARDIAN Prototype Wallet
-        </p>
-    </div>
-
-    <div class="notice mb-4">
-        <i class="fas fa-info-circle mr-1"></i>
-        This is an internal demonstration wallet. It does not display a verified Airtel Money balance or represent real mobile-money funds.
-    </div>
-
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-
-        <div class="card p-4 text-center">
-            <p class="text-xs text-gray-500">Total</p>
-            <p class="text-2xl font-bold text-cyan-400" id="statTotal">0</p>
-        </div>
-
-        <div class="card p-4 text-center">
-            <p class="text-xs text-gray-500">Allowed</p>
-            <p class="text-2xl font-bold text-green-400" id="statAllowed">0</p>
-        </div>
-
-        <div class="card p-4 text-center">
-            <p class="text-xs text-gray-500">Review</p>
-            <p class="text-2xl font-bold text-yellow-400" id="statReview">0</p>
-        </div>
-
-        <div class="card p-4 text-center">
-            <p class="text-xs text-gray-500">Blocked</p>
-            <p class="text-2xl font-bold text-red-400" id="statBlocked">0</p>
-        </div>
-
-    </div>
-
-    <div class="card p-4 mb-4">
-        <div class="flex justify-between items-center mb-3">
-            <h3 class="text-sm text-yellow-400 font-semibold">
-                <i class="fas fa-bell mr-1"></i> Latest Activity
-            </h3>
-
-            <button onclick="showSection('notifications',this)"
-                class="text-xs text-green-400">
-                View All
-            </button>
-        </div>
-
-        <div id="notificationsPreview" class="space-y-3 text-sm">
-            <p class="loading">Loading activity...</p>
-        </div>
-    </div>
-
-    <div class="card p-4 mb-4">
-        <h3 class="text-sm text-cyan-400 font-semibold mb-3">
-            <i class="fas fa-shield-halved mr-1"></i>
-            Account Security
-        </h3>
-
-        <div class="flex justify-between text-sm py-2 border-b border-gray-800">
-            <span class="text-gray-400">Account status</span>
-            <span id="accountStatus" class="text-green-400">Checking...</span>
-        </div>
-
-        <div class="flex justify-between text-sm py-2">
-            <span class="text-gray-400">Phone number</span>
-            <span id="homePhone" class="text-cyan-300">Loading...</span>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-3 mb-4">
-        <button onclick="showSection('wallet',null)"
-            class="btn-primary rounded-xl p-4 text-sm font-semibold">
-            <i class="fas fa-wallet mr-2"></i> Wallet
-        </button>
-
-        <button onclick="showSection('report',null)"
-            class="btn-neutral rounded-xl p-4 text-sm font-semibold">
-            <i class="fas fa-flag mr-2"></i> Report Activity
-        </button>
-    </div>
-
-</section>
-
-
-<!-- ================= WALLET ================= -->
-<section id="section-wallet" class="section">
-
-    <div class="card p-5 mb-4 text-center">
-        <p class="text-gray-400 text-sm">Internal Wallet Balance</p>
-        <h2 class="text-3xl font-bold text-green-400 my-2" id="walletBalance">
-            ZMW 0.00
-        </h2>
-        <span class="badge badge-yellow">PROTOTYPE WALLET</span>
-    </div>
-
-    <div class="notice mb-4">
-        Wallet operations below update the project's internal database balance only.
-        They do not send or receive real Airtel Money payments.
-    </div>
-
-    <div class="flex gap-2 mb-4">
-        <button onclick="showWalletTab('send')" id="btn-send"
-            class="flex-1 py-3 rounded-lg bg-green-500 text-black font-semibold text-sm">
-            Send Money
-        </button>
-
-        <button onclick="showWalletTab('topup')" id="btn-topup"
-            class="flex-1 py-3 rounded-lg bg-gray-800 text-gray-300 text-sm">
-            Top Up
-        </button>
-    </div>
-
-    <!-- SEND -->
-    <div id="wallet-send" class="card p-5 mb-4">
-
-        <h3 class="text-green-400 font-semibold mb-4">
-            <i class="fas fa-paper-plane mr-2"></i> Internal Transfer
-        </h3>
-
-        <form id="transferForm" class="space-y-4">
-
-            <div>
-                <label class="field-label" for="recipientPhone">
-                    Recipient Phone Number
-                </label>
-
-                <input type="tel" id="recipientPhone"
-                    class="field"
-                    placeholder="0977123456"
-                    minlength="9"
-                    maxlength="15"
-                    required>
+        <!-- ==================== HOME ==================== -->
+        <div id="section-home" class="section active px-4">
+            <div class="card p-5 mb-4 text-center">
+                <p class="text-gray-400 text-sm">Account Balance</p>
+                <h2 class="text-3xl font-bold text-green-400 my-1" id="balanceDisplay">ZMW 0.00</h2>
+                <p class="text-xs text-gray-500">Airtel Money • Zambia</p>
             </div>
 
-            <div>
-                <label class="field-label" for="transferAmount">
-                    Amount (ZMW)
-                </label>
+            <div class="grid grid-cols-3 gap-3 mb-5" id="statsContainer"></div>
 
-                <input type="number" id="transferAmount"
-                    class="field"
-                    placeholder="50"
-                    min="0.01"
-                    step="0.01"
-                    required>
+            <div class="card p-4 mb-4">
+                <h3 class="text-sm text-yellow-400 mb-3"><i class="fas fa-bell mr-1"></i> Latest Notifications</h3>
+                <div id="notificationsPreview" class="space-y-2 text-sm"></div>
             </div>
-
-            <button type="submit" id="transferButton"
-                class="w-full py-3 rounded-xl bg-green-500 text-black font-semibold">
-                Confirm Internal Transfer
-            </button>
-
-        </form>
-
-        <div id="transferResult" class="result-box" role="status"></div>
-
-    </div>
-
-    <!-- TOP UP -->
-    <div id="wallet-topup" class="card p-5 mb-4 hidden">
-
-        <h3 class="text-green-400 font-semibold mb-4">
-            <i class="fas fa-plus-circle mr-2"></i> Internal Wallet Top Up
-        </h3>
-
-        <form id="topupForm" class="space-y-4">
-
-            <div>
-                <label class="field-label" for="topupAmount">
-                    Amount (ZMW)
-                </label>
-
-                <input type="number" id="topupAmount"
-                    class="field"
-                    placeholder="100"
-                    min="10"
-                    max="10000"
-                    step="0.01"
-                    required>
-            </div>
-
-            <button type="submit" id="topupButton"
-                class="w-full py-3 rounded-xl bg-green-500 text-black font-semibold">
-                Add Demonstration Balance
-            </button>
-
-        </form>
-
-        <div id="topupResult" class="result-box" role="status"></div>
-
-    </div>
-
-</section>
-
-
-<!-- ================= TRANSACTIONS ================= -->
-<section id="section-transactions" class="section">
-
-    <div class="card p-4 mb-4">
-
-        <div class="flex justify-between items-center gap-2 mb-4">
-            <h3 class="text-cyan-400 font-semibold">
-                <i class="fas fa-exchange-alt mr-2"></i>
-                My Transactions
-            </h3>
-
-            <button onclick="loadTransactions()"
-                class="text-green-400 text-sm">
-                <i class="fas fa-sync-alt"></i>
-            </button>
         </div>
 
-        <input type="search" id="transactionSearch"
-            class="field mb-3"
-            placeholder="Search transaction ID..."
-            oninput="filterTransactions()">
+        <!-- ==================== WALLET ==================== -->
+        <div id="section-wallet" class="section px-4">
+            <div class="card p-5 mb-4 text-center">
+                <p class="text-gray-400 text-sm">Available Balance</p>
+                <h2 class="text-3xl font-bold text-green-400 my-1" id="walletBalance">ZMW 0.00</h2>
+            </div>
 
-        <div id="allTransactions" class="space-y-3 text-sm">
-            <p class="loading">Loading transactions...</p>
+            <div class="flex gap-2 mb-4">
+                <button onclick="showWalletTab('send')" id="btn-send" class="flex-1 py-2.5 rounded-lg bg-green-500 text-black font-medium text-sm">Send Money</button>
+                <button onclick="showWalletTab('topup')" id="btn-topup" class="flex-1 py-2.5 rounded-lg bg-gray-800 text-gray-300 text-sm">Top Up</button>
+            </div>
+
+            <div id="wallet-send" class="card p-5">
+                <form id="transferForm" class="space-y-4">
+                    <div>
+                        <label class="text-xs text-gray-400">Recipient Phone</label>
+                        <input type="text" id="recipientPhone" placeholder="0977123456" required
+                            class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">Amount (ZMW)</label>
+                        <input type="number" id="transferAmount" placeholder="50" min="1" required
+                            class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white">
+                    </div>
+                    <button type="submit" class="w-full py-3 rounded-xl bg-green-500 text-black font-semibold">Send Money</button>
+                </form>
+                <div id="transferResult" class="mt-3 text-sm hidden"></div>
+            </div>
+
+            <div id="wallet-topup" class="card p-5 hidden">
+                <form id="topupForm" class="space-y-4">
+                    <div>
+                        <label class="text-xs text-gray-400">Amount to Top Up</label>
+                        <input type="number" id="topupAmount" placeholder="100" min="10" required
+                            class="w-full mt-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white">
+                    </div>
+                    <button type="submit" class="w-full py-3 rounded-xl bg-green-500 text-black font-semibold">Top Up Now</button>
+                </form>
+                <div id="topupResult" class="mt-3 text-sm hidden"></div>
+            </div>
         </div>
 
-    </div>
-
-</section>
-
-
-<!-- ================= AI ASSISTANT ================= -->
-<section id="section-ai" class="section">
-
-    <div class="card p-4 mb-4">
-
-        <div class="flex items-center gap-3 mb-4">
-
-            <div class="w-11 h-11 rounded-full bg-green-500/20 flex items-center justify-center">
-                <i class="fas fa-robot text-green-400 text-xl"></i>
+        <!-- ==================== TRANSACTIONS ==================== -->
+        <div id="section-transactions" class="section px-4">
+            <div class="card p-4">
+                <h3 class="text-sm text-cyan-400 mb-3">My Transactions</h3>
+                <div id="allTransactions" class="space-y-3 text-sm"></div>
             </div>
-
-            <div>
-                <h3 class="font-semibold">Mulenga</h3>
-                <p class="text-xs text-gray-500">
-                    THE GUARDIAN AI Assistant
-                </p>
-            </div>
-
         </div>
 
-        <div id="chatBox"
-            class="h-80 overflow-y-auto mb-4 p-2 rounded-lg bg-black/20"
-            aria-live="polite">
-        </div>
-
-        <form id="chatForm" class="flex gap-2">
-
-            <input type="text" id="chatInput"
-                placeholder="Ask Mulenga..."
-                maxlength="1000"
-                required
-                class="flex-1 min-w-0 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white text-sm">
-
-            <button type="submit" id="chatButton"
-                class="px-5 rounded-xl bg-green-500 text-black">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-
-        </form>
-
-    </div>
-
-</section>
-
-
-<!-- ================= NOTIFICATIONS ================= -->
-<section id="section-notifications" class="section">
-
-    <div class="card p-4 mb-4">
-
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-yellow-400 font-semibold">
-                <i class="fas fa-bell mr-2"></i>
-                Account Activity
-            </h3>
-
-            <button onclick="loadNotifications()"
-                class="text-green-400 text-sm">
-                <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-        </div>
-
-        <p class="text-xs text-gray-500 mb-4">
-            Activity records currently available for your account.
-        </p>
-
-        <div id="allNotifications" class="space-y-3">
-            <p class="loading">Loading activity...</p>
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ================= REPORT ACTIVITY ================= -->
-<section id="section-report" class="section">
-
-    <div class="card p-5 mb-4">
-
-        <h3 class="text-yellow-400 font-semibold mb-2">
-            <i class="fas fa-flag mr-2"></i>
-            Report Suspicious Activity
-        </h3>
-
-        <p class="text-gray-400 text-xs mb-4">
-            Submit a transaction ID and explain why you believe the transaction requires investigation.
-        </p>
-
-        <form id="reportForm" class="space-y-4">
-
-            <div>
-                <label class="field-label" for="reportTransactionId">
-                    Transaction ID
-                </label>
-
-                <input type="text" id="reportTransactionId"
-                    class="field"
-                    maxlength="100"
-                    placeholder="Enter transaction reference"
-                    required>
-            </div>
-
-            <div>
-                <label class="field-label" for="reportReason">
-                    Reason for Reporting
-                </label>
-
-                <textarea id="reportReason"
-                    class="field"
-                    rows="5"
-                    maxlength="1000"
-                    placeholder="Describe the suspicious activity..."
-                    required></textarea>
-            </div>
-
-            <button type="submit" id="reportButton"
-                class="w-full py-3 rounded-xl bg-yellow-400 text-black font-semibold">
-                Submit Report
-            </button>
-
-        </form>
-
-        <div id="reportResult" class="result-box" role="status"></div>
-
-    </div>
-
-</section>
-
-
-<!-- ================= SETTINGS / PROFILE ================= -->
-<section id="section-settings" class="section">
-
-    <div class="card p-5 mb-4">
-
-        <h3 class="text-green-400 font-semibold mb-4">
-            <i class="fas fa-user mr-2"></i> My Profile
-        </h3>
-
-        <form id="profileForm" class="space-y-4">
-
-            <div>
-                <label class="field-label" for="profileFullName">
-                    Full Name
-                </label>
-
-                <input type="text" id="profileFullName"
-                    class="field"
-                    maxlength="150"
-                    required>
-            </div>
-
-            <div>
-                <label class="field-label" for="profilePhone">
-                    Phone Number
-                </label>
-
-                <input type="text" id="profilePhone"
-                    class="field"
-                    readonly>
-            </div>
-
-            <div>
-                <label class="field-label" for="profileEmail">
-                    Email Address
-                </label>
-
-                <input type="email" id="profileEmail"
-                    class="field"
-                    maxlength="254"
-                    placeholder="your@email.com">
-            </div>
-
-            <div class="text-xs text-gray-500" id="profileCreated">
-                Account information loading...
-            </div>
-
-            <button type="submit" id="profileButton"
-                class="w-full py-3 rounded-xl bg-green-500 text-black font-semibold">
-                Save Profile Changes
-            </button>
-
-        </form>
-
-        <div id="profileResult" class="result-box" role="status"></div>
-
-    </div>
-
-
-    <div class="card p-5 mb-4">
-
-        <h3 class="text-yellow-400 font-semibold mb-4">
-            <i class="fas fa-cog mr-2"></i> System Settings
-        </h3>
-
-        <div class="space-y-4 text-sm">
-
-            <div class="flex justify-between items-center gap-3">
-                <span>Live Wallpaper</span>
-
-                <select id="wallpaperSelect"
-                    onchange="changeWallpaper(this.value)"
-                    class="bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-sm">
-
-                    <option value="matrix">Matrix Rain</option>
-                    <option value="binary">Binary Stream</option>
-                    <option value="particles">Cyber Particles</option>
-                    <option value="none">None</option>
-
-                </select>
-            </div>
-
-            <div class="flex justify-between">
-                <span class="text-gray-400">Transaction Activity</span>
-                <span class="text-green-400">Available</span>
-            </div>
-
-            <div class="flex justify-between">
-                <span class="text-gray-400">Fraud Reporting</span>
-                <span class="text-green-400">Available</span>
-            </div>
-
-            <div class="flex justify-between">
-                <span class="text-gray-400">Currency</span>
-                <span>ZMW</span>
-            </div>
-
-            <div class="flex justify-between">
-                <span class="text-gray-400">Application</span>
-                <span>THE GUARDIAN</span>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <div class="card p-5 mb-4">
-
-        <h3 class="text-red-400 font-semibold mb-3">
-            <i class="fas fa-shield-alt mr-2"></i> Account Actions
-        </h3>
-
-        <p class="text-gray-400 text-xs mb-4">
-            Account deletion is not available because your current backend does not provide a user account deletion endpoint.
-        </p>
-
-        <a href="/user/logout"
-            class="block text-center w-full py-3 rounded-xl border border-red-500/40 text-red-400">
-            <i class="fas fa-sign-out-alt mr-2"></i>
-            Logout
-        </a>
-
-    </div>
-
-</section>
-
-
-<footer class="text-center text-gray-600 text-xs mt-8 mb-6 mono">
-    THE GUARDIAN • USER PORTAL
-    <br>
-    <span class="text-green-500">Secured by Engineer Mulenga</span>
-</footer>
-
-</main>
-</div>
-
-
-<!-- BOTTOM NAVIGATION -->
-<nav class="bottom-nav" aria-label="User navigation">
-
-    <button class="nav-item active"
-        onclick="showSection('home',this)">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-    </button>
-
-    <button class="nav-item"
-        onclick="showSection('wallet',this)">
-        <i class="fas fa-wallet"></i>
-        <span>Wallet</span>
-    </button>
-
-    <button class="nav-item"
-        onclick="showSection('transactions',this)">
-        <i class="fas fa-exchange-alt"></i>
-        <span>History</span>
-    </button>
-
-    <button class="nav-item"
-        onclick="showSection('ai',this)">
-        <i class="fas fa-robot"></i>
-        <span>Mulenga</span>
-    </button>
-
-    <button class="nav-item"
-        onclick="showSection('settings',this)">
-        <i class="fas fa-cog"></i>
-        <span>Settings</span>
-    </button>
-
-</nav>
-
-
-<script>
-'use strict';
-
-/* =========================================
-   THE GUARDIAN API CONFIGURATION
-========================================= */
-
-const API = {
-    profile: '/api/v1/user/profile',
-    stats: '/api/v1/user/stats',
-    transactions: '/api/v1/user/transactions',
-    notifications: '/api/v1/user/notifications',
-    report: '/api/v1/user/report',
-    ai: '/api/v1/user/ai-chat',
-    transfer: '/api/v1/user/airtel-transfer',
-    topup: '/api/v1/user/topup'
-};
-
-const state = {
-    profile: null,
-    stats: null,
-    transactions: [],
-    notifications: [],
-    loading: false,
-    refreshTimer: null
-};
-
-const $ = id => document.getElementById(id);
-
-
-/* =========================================
-   SAFE OUTPUT HELPERS
-========================================= */
-
-function escapeHTML(value) {
-    return String(value ?? '').replace(/[&<>"']/g, character => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    })[character]);
-}
-
-function money(value) {
-    const number = Number(value);
-
-    if (!Number.isFinite(number)) return '0.00';
-
-    return number.toLocaleString('en-ZM', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
-}
-
-function formatDate(value) {
-    if (!value) return 'Unavailable';
-    return escapeHTML(value);
-}
-
-function showResult(id, success, message) {
-    const element = $(id);
-
-    if (!element) return;
-
-    element.className = 'result-box ' +
-        (success ? 'result-success' : 'result-error');
-
-    element.textContent = message;
-}
-
-function hideResult(id) {
-    const element = $(id);
-
-    if (!element) return;
-
-    element.className = 'result-box';
-    element.textContent = '';
-}
-
-async function apiRequest(url, options = {}) {
-    const response = await fetch(url, {
-        credentials: 'same-origin',
-        ...options,
-        headers: {
-            ...(options.headers || {})
-        }
-    });
-
-    const contentType = response.headers.get('content-type') || '';
-
-    let data = {};
-
-    if (contentType.includes('application/json')) {
-        data = await response.json();
-    } else {
-        const text = await response.text();
-        data = { detail: text || 'Unexpected server response.' };
-    }
-
-    if (!response.ok) {
-        if (response.status === 401) {
-            throw new Error('Your session has expired. Please log in again.');
-        }
-
-        throw new Error(
-            data.detail || data.message || 'The request could not be completed.'
-        );
-    }
-
-    return data;
-}
-
-function displayError(id, error) {
-    console.error(error);
-
-    if (error.message.includes('session has expired')) {
-        showResult(id, false, error.message);
-        return;
-    }
-
-    showResult(id, false, error.message || 'An unexpected error occurred.');
-}
-
-
-/* =========================================
-   NAVIGATION
-========================================= */
-
-function showSection(name, element) {
-    const section = $('section-' + name);
-
-    if (!section) return;
-
-    document.querySelectorAll('.section').forEach(item => {
-        item.classList.remove('active');
-    });
-
-    section.classList.add('active');
-
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-    });
-
-    if (element && element.classList.contains('nav-item')) {
-        element.classList.add('active');
-    } else {
-        const nav = document.querySelector(
-            `.nav-item[onclick*="'${name}'"]`
-        );
-
-        if (nav) nav.classList.add('active');
-    }
-
-    if (name === 'transactions') loadTransactions();
-    if (name === 'notifications') loadNotifications();
-    if (name === 'settings') loadProfile();
-}
-
-function showWalletTab(tab) {
-    $('wallet-send').classList.toggle('hidden', tab !== 'send');
-    $('wallet-topup').classList.toggle('hidden', tab !== 'topup');
-
-    $('btn-send').className = tab === 'send'
-        ? 'flex-1 py-3 rounded-lg bg-green-500 text-black font-semibold text-sm'
-        : 'flex-1 py-3 rounded-lg bg-gray-800 text-gray-300 text-sm';
-
-    $('btn-topup').className = tab === 'topup'
-        ? 'flex-1 py-3 rounded-lg bg-green-500 text-black font-semibold text-sm'
-        : 'flex-1 py-3 rounded-lg bg-gray-800 text-gray-300 text-sm';
-}
-
-
-/* =========================================
-   PROFILE
-========================================= */
-
-async function loadProfile() {
-    try {
-        const profile = await apiRequest(API.profile);
-
-        state.profile = profile;
-
-        $('userFullName').textContent =
-            profile.full_name || profile.username || 'User';
-
-        $('homePhone').textContent = profile.phone || 'Unavailable';
-
-        $('accountStatus').textContent =
-            profile.is_active ? 'Active' : 'Inactive';
-
-        $('accountStatus').className =
-            profile.is_active ? 'text-green-400' : 'text-red-400';
-
-        $('profileFullName').value = profile.full_name || '';
-        $('profilePhone').value = profile.phone || '';
-        $('profileEmail').value = profile.email || '';
-
-        $('profileCreated').textContent =
-            'Account created: ' + (profile.created_at || 'Unavailable');
-
-    } catch (error) {
-        console.error('Profile loading error:', error);
-
-        $('userFullName').textContent = 'User';
-        $('homePhone').textContent = 'Unavailable';
-        $('accountStatus').textContent = 'Unable to verify';
-    }
-}
-
-$('profileForm').addEventListener('submit', async event => {
-    event.preventDefault();
-
-    const button = $('profileButton');
-
-    const fullName = $('profileFullName').value.trim();
-    const email = $('profileEmail').value.trim();
-
-    if (!fullName) {
-        showResult('profileResult', false, 'Please enter your full name.');
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = 'Saving...';
-
-    const formData = new FormData();
-
-    formData.append('full_name', fullName);
-    formData.append('email', email);
-
-    try {
-        const result = await apiRequest(API.profile, {
-            method: 'PUT',
-            body: formData
-        });
-
-        showResult(
-            'profileResult',
-            true,
-            result.message || 'Profile updated successfully.'
-        );
-
-        await loadProfile();
-
-    } catch (error) {
-        displayError('profileResult', error);
-
-    } finally {
-        button.disabled = false;
-        button.textContent = 'Save Profile Changes';
-    }
-});
-
-
-/* =========================================
-   DASHBOARD STATISTICS
-========================================= */
-
-async function loadStats() {
-    try {
-        const stats = await apiRequest(API.stats);
-
-        state.stats = stats;
-
-        $('balanceDisplay').textContent =
-            'ZMW ' + money(stats.balance);
-
-        $('walletBalance').textContent =
-            'ZMW ' + money(stats.balance);
-
-        $('statTotal').textContent =
-            Number(stats.total_transactions || 0);
-
-        $('statAllowed').textContent =
-            Number(stats.allowed || 0);
-
-        $('statReview').textContent =
-            Number(stats.review || 0);
-
-        $('statBlocked').textContent =
-            Number(stats.blocked || 0);
-
-    } catch (error) {
-        console.error('Statistics loading error:', error);
-    }
-}
-
-
-/* =========================================
-   TRANSACTION HISTORY
-========================================= */
-
-function decisionBadge(decision) {
-    const value = String(decision || '').toUpperCase();
-
-    if (value === 'BLOCK') {
-        return '<span class="badge badge-red">BLOCKED</span>';
-    }
-
-    if (value === 'REVIEW') {
-        return '<span class="badge badge-yellow">REVIEW</span>';
-    }
-
-    if (value === 'ALLOW') {
-        return '<span class="badge badge-green">ALLOWED</span>';
-    }
-
-    return '<span class="badge">UNKNOWN</span>';
-}
-
-async function loadTransactions() {
-    const container = $('allTransactions');
-
-    container.innerHTML =
-        '<p class="loading">Loading transactions...</p>';
-
-    try {
-        const transactions = await apiRequest(API.transactions);
-
-        if (!Array.isArray(transactions)) {
-            throw new Error('Unexpected transaction response.');
-        }
-
-        state.transactions = transactions;
-
-        renderTransactions();
-
-    } catch (error) {
-        console.error('Transaction loading error:', error);
-
-        container.textContent = error.message;
-    }
-}
-
-function renderTransactions(list = state.transactions) {
-    const container = $('allTransactions');
-
-    if (!list.length) {
-        container.innerHTML =
-            '<p class="text-gray-500 py-4">No transactions found.</p>';
-        return;
-    }
-
-    container.innerHTML = list.map(tx => `
-        <div class="border-b border-gray-800 py-3">
-
-            <div class="flex justify-between items-start gap-3">
-
-                <div class="min-w-0">
-                    <p class="font-semibold text-white">
-                        ZMW ${money(tx.amount)}
-                    </p>
-
-                    <p class="text-xs text-gray-500 mt-1 break-all">
-                        ${escapeHTML(tx.transaction_id)}
-                    </p>
+        <!-- ==================== AI ASSISTANT ==================== -->
+        <div id="section-ai" class="section px-4">
+            <div class="card p-4">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <i class="fas fa-robot text-green-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold">Mulenga</h3>
+                        <p class="text-xs text-gray-500">AI Assistant</p>
+                    </div>
                 </div>
 
-                <div class="shrink-0">
-                    ${decisionBadge(tx.decision)}
-                </div>
+                <div id="chatBox" class="h-72 overflow-y-auto mb-3 space-y-3"></div>
 
+                <form id="chatForm" class="flex gap-2">
+                    <input type="text" id="chatInput" placeholder="Ask Mulenga..." required
+                        class="flex-1 px-4 py-3 rounded-xl bg-black/40 border border-gray-700 text-white text-sm">
+                    <button type="submit" class="px-4 py-3 rounded-xl bg-green-500 text-black">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
             </div>
-
-            <div class="grid grid-cols-2 gap-2 mt-3 text-xs text-gray-400">
-                <p>Risk score: ${escapeHTML(tx.risk_score ?? 'N/A')}</p>
-                <p>${escapeHTML(tx.time || 'Time unavailable')}</p>
-            </div>
-
-            <div class="text-xs text-gray-500 mt-2 break-all">
-                Sender: ${escapeHTML(tx.sender || 'N/A')}
-            </div>
-
-            <div class="text-xs text-gray-500 mt-1 break-all">
-                Receiver: ${escapeHTML(tx.receiver || 'N/A')}
-            </div>
-
         </div>
-    `).join('');
-}
 
-function filterTransactions() {
-    const query = $('transactionSearch').value.trim().toLowerCase();
+        <!-- ==================== SETTINGS ==================== -->
+        <div id="section-settings" class="section px-4">
+            <div class="card p-5 mb-4">
+                <h3 class="text-green-400 mb-4"><i class="fas fa-user mr-2"></i>My Profile</h3>
+                <div id="profileView" class="space-y-3 text-sm"></div>
+            </div>
 
-    const filtered = state.transactions.filter(tx =>
-        String(tx.transaction_id || '').toLowerCase().includes(query)
-    );
+            <div class="card p-5 mb-4">
+                <h3 class="text-yellow-400 mb-4"><i class="fas fa-cog mr-2"></i>System Settings</h3>
+                <div class="space-y-4 text-sm">
+                    <div class="flex justify-between items-center">
+                        <span>Live Wallpaper</span>
+                        <select id="wallpaperSelect" onchange="changeWallpaper(this.value)" class="bg-black/40 border border-gray-700 rounded-lg px-3 py-1 text-sm">
+                            <option value="matrix">Matrix Rain</option>
+                            <option value="binary">Binary Stream</option>
+                            <option value="particles">Cyber Particles</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-between"><span>Transaction Alerts</span><span class="text-green-400">On</span></div>
+                    <div class="flex justify-between"><span>Login Notifications</span><span class="text-green-400">On</span></div>
+                    <div class="flex justify-between"><span>Fraud Alerts</span><span class="text-green-400">On</span></div>
+                    <div class="flex justify-between"><span>SMS Alerts</span><span class="text-green-400">On</span></div>
+                    <div class="flex justify-between"><span>Language</span><span>English</span></div>
+                    <div class="flex justify-between"><span>Currency</span><span>ZMW</span></div>
+                    <div class="flex justify-between"><span>App Version</span><span>2.6.0</span></div>
+                </div>
+            </div>
 
-    renderTransactions(filtered);
-}
+            <button onclick="deleteAccount()" class="w-full py-3 rounded-xl bg-red-500/10 border border-red-500/40 text-red-400 text-sm mb-4">
+                Delete My Account
+            </button>
 
+            <a href="/logout" class="block text-center text-red-400 py-2">Logout</a>
+        </div>
+    </div>
 
-/* =========================================
-   NOTIFICATIONS / ACCOUNT ACTIVITY
-========================================= */
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="showSection('home', this)">
+            <i class="fas fa-home text-lg"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-item" onclick="showSection('wallet', this)">
+            <i class="fas fa-wallet text-lg"></i>
+            <span>Wallet</span>
+        </div>
+        <div class="nav-item" onclick="showSection('transactions', this)">
+            <i class="fas fa-exchange-alt text-lg"></i>
+            <span>History</span>
+        </div>
+        <div class="nav-item" onclick="showSection('ai', this)">
+            <i class="fas fa-robot text-lg"></i>
+            <span>Mulenga</span>
+        </div>
+        <div class="nav-item" onclick="showSection('settings', this)">
+            <i class="fas fa-cog text-lg"></i>
+            <span>Settings</span>
+        </div>
+    </div>
 
-async function loadNotifications() {
-    const container = $('allNotifications');
+    <script>
+        // ========== WALLPAPER ==========
+        const canvas = document.getElementById('wallpaper');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+        let currentWallpaper = localStorage.getItem('userWallpaper') || 'matrix';
 
-    container.innerHTML =
-        '<p class="loading">Loading activity...</p>';
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
 
-    try {
-        const notifications = await apiRequest(API.notifications);
+        const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+        let drops = [];
 
-        if (!Array.isArray(notifications)) {
-            throw new Error('Unexpected activity response.');
+        function initMatrix() {
+            drops = Array(Math.floor(canvas.width / 14)).fill(1);
         }
 
-        state.notifications = notifications;
-
-        renderNotifications();
-
-    } catch (error) {
-        console.error('Activity loading error:', error);
-        container.textContent = error.message;
-    }
-}
-
-function renderNotifications() {
-    const container = $('allNotifications');
-    const preview = $('notificationsPreview');
-
-    const notifications = state.notifications;
-
-    if (!notifications.length) {
-        container.innerHTML =
-            '<p class="text-gray-500">No account activity available.</p>';
-
-        preview.innerHTML =
-            '<p class="text-gray-500">No recent activity.</p>';
-
-        return;
-    }
-
-    container.innerHTML = notifications.map(item => `
-        <div class="card p-3">
-
-            <div class="flex items-start gap-3">
-
-                <div class="w-9 h-9 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
-                    <i class="fas fa-bell text-green-400"></i>
-                </div>
-
-                <div class="min-w-0">
-                    <p class="text-green-400 text-sm font-semibold">
-                        ${escapeHTML(item.action)}
-                    </p>
-
-                    <p class="text-gray-400 text-xs mt-1">
-                        ${escapeHTML(item.details || '')}
-                    </p>
-
-                    <p class="text-gray-600 text-xs mt-2">
-                        ${formatDate(item.time)}
-                    </p>
-                </div>
-
-            </div>
-
-        </div>
-    `).join('');
-
-    preview.innerHTML = notifications.slice(0, 4).map(item => `
-        <div class="border-b border-gray-800 pb-2">
-            <p class="text-green-400 text-sm">
-                ${escapeHTML(item.action)}
-            </p>
-
-            <p class="text-xs text-gray-500 mt-1">
-                ${escapeHTML(item.time)}
-            </p>
-        </div>
-    `).join('');
-}
-
-
-/* =========================================
-   SUSPICIOUS ACTIVITY REPORTING
-========================================= */
-
-$('reportForm').addEventListener('submit', async event => {
-    event.preventDefault();
-
-    const button = $('reportButton');
-
-    const transactionId = $('reportTransactionId').value.trim();
-    const reason = $('reportReason').value.trim();
-
-    if (!transactionId || !reason) {
-        showResult(
-            'reportResult',
-            false,
-            'Please enter a transaction ID and reason.'
-        );
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = 'Submitting...';
-
-    const formData = new FormData();
-
-    formData.append('transaction_id', transactionId);
-    formData.append('reason', reason);
-
-    try {
-        const result = await apiRequest(API.report, {
-            method: 'POST',
-            body: formData
-        });
-
-        showResult(
-            'reportResult',
-            true,
-            result.message || 'Report submitted successfully.'
-        );
-
-        $('reportForm').reset();
-
-        await loadNotifications();
-
-    } catch (error) {
-        displayError('reportResult', error);
-
-    } finally {
-        button.disabled = false;
-        button.textContent = 'Submit Report';
-    }
-});
-
-
-/* =========================================
-   INTERNAL WALLET TRANSFER
-========================================= */
-
-$('transferForm').addEventListener('submit', async event => {
-    event.preventDefault();
-
-    const button = $('transferButton');
-
-    const recipientPhone = $('recipientPhone').value.trim();
-    const amount = Number($('transferAmount').value);
-
-    if (!recipientPhone || !Number.isFinite(amount) || amount <= 0) {
-        showResult(
-            'transferResult',
-            false,
-            'Enter a valid recipient phone number and amount.'
-        );
-        return;
-    }
-
-    if (!/^[+0-9 ()-]{9,15}$/.test(recipientPhone)) {
-        showResult(
-            'transferResult',
-            false,
-            'Please check the recipient phone number.'
-        );
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = 'Processing...';
-
-    hideResult('transferResult');
-
-    try {
-        const result = await apiRequest(API.transfer, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                recipient_phone: recipientPhone,
-                amount: amount
-            })
-        });
-
-        showResult(
-            'transferResult',
-            true,
-            'Internal prototype transfer completed. Reference: ' +
-            result.transaction_id +
-            '. New internal balance: ZMW ' +
-            money(result.new_balance) +
-            '. No real Airtel Money payment was made.'
-        );
-
-        $('transferForm').reset();
-
-        await loadAll();
-
-    } catch (error) {
-        displayError('transferResult', error);
-
-    } finally {
-        button.disabled = false;
-        button.textContent = 'Confirm Internal Transfer';
-    }
-});
-
-
-/* =========================================
-   INTERNAL WALLET TOP UP
-========================================= */
-
-$('topupForm').addEventListener('submit', async event => {
-    event.preventDefault();
-
-    const button = $('topupButton');
-    const amount = Number($('topupAmount').value);
-
-    if (!Number.isFinite(amount) || amount < 10 || amount > 10000) {
-        showResult(
-            'topupResult',
-            false,
-            'Enter an amount between ZMW 10 and ZMW 10,000.'
-        );
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = 'Processing...';
-
-    hideResult('topupResult');
-
-    try {
-        const result = await apiRequest(API.topup, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                amount: amount
-            })
-        });
-
-        showResult(
-            'topupResult',
-            true,
-            'Demonstration balance updated. New internal balance: ZMW ' +
-            money(result.new_balance) +
-            '. No real payment was received.'
-        );
-
-        $('topupForm').reset();
-
-        await loadAll();
-
-    } catch (error) {
-        displayError('topupResult', error);
-
-    } finally {
-        button.disabled = false;
-        button.textContent = 'Add Demonstration Balance';
-    }
-});
-
-
-/* =========================================
-   MULENGA AI ASSISTANT
-========================================= */
-
-function addChatMessage(message, sender) {
-    const box = $('chatBox');
-
-    const bubble = document.createElement('div');
-
-    bubble.className = sender === 'user'
-        ? 'chat-bubble chat-user'
-        : 'chat-bubble chat-ai';
-
-    bubble.textContent = message;
-
-    box.appendChild(bubble);
-
-    box.scrollTop = box.scrollHeight;
-}
-
-function initializeChat() {
-    if ($('chatBox').children.length === 0) {
-        addChatMessage(
-            'Mwaiseni! Takulandilani. I am Mulenga, your AI assistant in THE GUARDIAN. How can I help you today?',
-            'ai'
-        );
-    }
-}
-
-$('chatForm').addEventListener('submit', async event => {
-    event.preventDefault();
-
-    const input = $('chatInput');
-    const button = $('chatButton');
-
-    const message = input.value.trim();
-
-    if (!message) return;
-
-    addChatMessage(message, 'user');
-
-    input.value = '';
-
-    button.disabled = true;
-
-    try {
-        const result = await apiRequest(API.ai, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: message
-            })
-        });
-
-        addChatMessage(
-            result.answer || 'No response was returned.',
-            'ai'
-        );
-
-    } catch (error) {
-        addChatMessage(
-            error.message || 'Unable to connect to Mulenga right now.',
-            'ai'
-        );
-
-    } finally {
-        button.disabled = false;
-        input.focus();
-    }
-});
-
-
-/* =========================================
-   WALLPAPER SYSTEM
-========================================= */
-
-const canvas = $('wallpaper');
-const ctx = canvas.getContext('2d');
-
-let animationId = null;
-let currentWallpaper = 'matrix';
-let drops = [];
-let particles = [];
-
-try {
-    currentWallpaper =
-        localStorage.getItem('userWallpaper') || 'matrix';
-} catch (error) {
-    console.warn('Wallpaper preference unavailable.');
-}
-
-const characters =
-    '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミメモ';
-
-function resizeCanvas() {
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-
-    canvas.width = Math.floor(window.innerWidth * ratio);
-    canvas.height = Math.floor(window.innerHeight * ratio);
-
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-
-    if (currentWallpaper === 'matrix') {
-        initMatrix();
-    }
-
-    if (currentWallpaper === 'particles') {
-        initParticles();
-    }
-}
-
-function initMatrix() {
-    drops = Array(
-        Math.floor(window.innerWidth / 14)
-    ).fill(1);
-}
-
-function drawMatrix() {
-    ctx.fillStyle = 'rgba(11,15,25,0.08)';
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
-
-    ctx.fillStyle = '#00ff9f';
-    ctx.font = '14px monospace';
-
-    drops.forEach((drop, index) => {
-        const character = characters[
-            Math.floor(Math.random() * characters.length)
-        ];
-
-        ctx.fillText(character, index * 14, drop * 14);
-
-        if (
-            drop * 14 > window.innerHeight &&
-            Math.random() > 0.975
-        ) {
-            drops[index] = 0;
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(11,15,25,0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00ff9f';
+            ctx.font = '14px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * 14, drops[i] * 14);
+                if (drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
         }
 
-        drops[index]++;
-    });
-}
+        function drawBinary() {
+            ctx.fillStyle = 'rgba(11,15,25,0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00f0ff';
+            ctx.font = '13px monospace';
+            for (let i = 0; i < 40; i++) {
+                ctx.fillText(Math.random() > 0.5 ? '1' : '0', Math.random() * canvas.width, Math.random() * canvas.height);
+            }
+        }
 
-function drawBinary() {
-    ctx.fillStyle = 'rgba(11,15,25,0.12)';
-    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+        let particles = [];
+        function initParticles() {
+            particles = Array.from({length: 35}, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 1.1,
+                vy: (Math.random() - 0.5) * 1.1,
+                size: Math.random() * 2 + 1
+            }));
+        }
 
-    ctx.fillStyle = '#22d3ee';
-    ctx.font = '13px monospace';
+        function drawParticles() {
+            ctx.fillStyle = 'rgba(11,15,25,0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00ff9f';
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
 
-    for (let i = 0; i < 35; i++) {
-        ctx.fillText(
-            Math.random() > 0.5 ? '1' : '0',
-            Math.random() * window.innerWidth,
-            Math.random() * window.innerHeight
-        );
-    }
-}
+        function startWallpaper(type) {
+            cancelAnimationFrame(animationId);
+            localStorage.setItem('userWallpaper', type);
+            if (type === 'matrix') {
+                initMatrix();
+                (function loop() { drawMatrix(); animationId = requestAnimationFrame(loop); })();
+            } else if (type === 'binary') {
+                (function loop() { drawBinary(); animationId = requestAnimationFrame(loop); })();
+            } else if (type === 'particles') {
+                initParticles();
+                (function loop() { drawParticles(); animationId = requestAnimationFrame(loop); })();
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
 
-function initParticles() {
-    particles = Array.from({length:35}, () => ({
-        x:Math.random() * window.innerWidth,
-        y:Math.random() * window.innerHeight,
-        vx:(Math.random() - .5) * .8,
-        vy:(Math.random() - .5) * .8,
-        size:Math.random() * 2 + 1
-    }));
-}
+        function changeWallpaper(val) {
+            startWallpaper(val);
+        }
 
-function drawParticles() {
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        document.getElementById('wallpaperSelect').value = currentWallpaper;
+        startWallpaper(currentWallpaper);
 
-    ctx.fillStyle = '#00ff9f';
+        // ========== SECTIONS ==========
+        function showSection(name, el) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + name).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            if (el) el.classList.add('active');
 
-    particles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
+            if (name === 'ai') {
+                const chatBox = document.getElementById('chatBox');
+                if (chatBox.children.length === 0) {
+                    addAIMessage("Mwaiseni<br>Takulandilani<br><br>Welcome To The Guardian Real Time Detention System, Am Your AI MULENGA, how can I assist you today?");
+                }
+            }
+        }
 
-        if (p.x < 0 || p.x > window.innerWidth) p.vx *= -1;
-        if (p.y < 0 || p.y > window.innerHeight) p.vy *= -1;
+        function showWalletTab(tab) {
+            document.getElementById('wallet-send').classList.add('hidden');
+            document.getElementById('wallet-topup').classList.add('hidden');
+            document.getElementById('btn-send').className = 'flex-1 py-2.5 rounded-lg bg-gray-800 text-gray-300 text-sm';
+            document.getElementById('btn-topup').className = 'flex-1 py-2.5 rounded-lg bg-gray-800 text-gray-300 text-sm';
 
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-    });
-}
+            if (tab === 'send') {
+                document.getElementById('wallet-send').classList.remove('hidden');
+                document.getElementById('btn-send').className = 'flex-1 py-2.5 rounded-lg bg-green-500 text-black font-medium text-sm';
+            } else {
+                document.getElementById('wallet-topup').classList.remove('hidden');
+                document.getElementById('btn-topup').className = 'flex-1 py-2.5 rounded-lg bg-green-500 text-black font-medium text-sm';
+            }
+        }
 
-function wallpaperLoop() {
-    if (currentWallpaper === 'none') return;
+        // ========== DATA LOADING ==========
+        async function loadAll() {
+            try {
+                const [profileRes, statsRes, txRes, notifRes] = await Promise.all([
+                    fetch('/api/v1/user/profile'),
+                    fetch('/api/v1/user/stats'),
+                    fetch('/api/v1/user/transactions'),
+                    fetch('/api/v1/user/notifications')
+                ]);
 
-    if (currentWallpaper === 'matrix') drawMatrix();
-    if (currentWallpaper === 'binary') drawBinary();
-    if (currentWallpaper === 'particles') drawParticles();
+                const profile = await profileRes.json();
+                const stats = await statsRes.json();
+                const transactions = await txRes.json();
+                const notifications = await notifRes.json();
 
-    animationId = requestAnimationFrame(wallpaperLoop);
-}
+                document.getElementById('userFullName').textContent = profile.full_name || profile.username;
+                document.getElementById('balanceDisplay').textContent = 'ZMW ' + Number(stats.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('walletBalance').textContent = 'ZMW ' + Number(stats.balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
 
-function startWallpaper(type) {
-    if (animationId !== null) {
-        cancelAnimationFrame(animationId);
-        animationId = null;
-    }
+                document.getElementById('statsContainer').innerHTML = `
+                    <div class="card p-3 text-center">
+                        <p class="text-xs text-gray-500">Total</p>
+                        <p class="text-lg font-bold text-cyan-400">${stats.total_transactions || 0}</p>
+                    </div>
+                    <div class="card p-3 text-center">
+                        <p class="text-xs text-gray-500">Allowed</p>
+                        <p class="text-lg font-bold text-green-400">${stats.allowed || 0}</p>
+                    </div>
+                    <div class="card p-3 text-center">
+                        <p class="text-xs text-gray-500">Blocked</p>
+                        <p class="text-lg font-bold text-red-400">${(stats.blocked || 0) + (stats.review || 0)}</p>
+                    </div>
+                `;
 
-    currentWallpaper = type;
+                const txHtml = transactions.length ? transactions.map(tx => `
+                    <div class="flex justify-between items-center py-2 border-b border-gray-800">
+                        <div>
+                            <p class="font-medium">ZMW ${Number(tx.amount).toLocaleString()}</p>
+                            <p class="text-xs text-gray-500">${tx.transaction_id}</p>
+                        </div>
+                        <span class="text-xs px-2 py-0.5 rounded ${tx.decision === 'BLOCK' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}">${tx.decision}</span>
+                    </div>
+                `).join('') : `<p class="text-gray-500">No transactions yet</p>`;
+                document.getElementById('allTransactions').innerHTML = txHtml;
 
-    try {
-        localStorage.setItem('userWallpaper', type);
-    } catch (error) {
-        console.warn('Could not save wallpaper preference.');
-    }
+                document.getElementById('notificationsPreview').innerHTML = notifications.length ?
+                    notifications.slice(0, 4).map(n => `<div><span class="text-green-400 text-sm">${n.action}</span><br><span class="text-xs text-gray-500">${n.time}</span></div>`).join('') :
+                    `<p class="text-gray-500">No notifications yet</p>`;
 
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+                document.getElementById('profileView').innerHTML = `
+                    <div class="flex justify-between"><span class="text-gray-400">Name</span><span>${profile.full_name}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Phone</span><span class="text-cyan-300">${profile.phone}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Email</span><span>${profile.email || 'Not set'}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-400">Last Login</span><span>${profile.last_login}</span></div>
+                `;
 
-    if (type === 'matrix') initMatrix();
-    if (type === 'particles') initParticles();
+            } catch (err) {
+                console.error(err);
+            }
+        }
 
-    if (type !== 'none') {
-        wallpaperLoop();
-    }
-}
+        // ========== AIRTEL MONEY ==========
+        document.getElementById('transferForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultDiv = document.getElementById('transferResult');
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = 'Processing...';
 
-function changeWallpaper(value) {
-    startWallpaper(value);
-}
+            try {
+                const res = await fetch('/api/v1/user/airtel-transfer', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        recipient_phone: document.getElementById('recipientPhone').value,
+                        amount: parseFloat(document.getElementById('transferAmount').value)
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    resultDiv.innerHTML = `<span class="text-red-400">❌ ${data.detail || 'Failed'}</span>`;
+                    return;
+                }
+                resultDiv.innerHTML = `<span class="text-green-400">✅ Sent! Ref: ${data.transaction_id}<br>New Balance: ZMW ${data.new_balance.toFixed(2)}</span>`;
+                document.getElementById('transferForm').reset();
+                loadAll();
+            } catch {
+                resultDiv.innerHTML = `<span class="text-red-400">❌ Network error</span>`;
+            }
+        });
 
+        document.getElementById('topupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultDiv = document.getElementById('topupResult');
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = 'Processing...';
 
-/* =========================================
-   LOAD ALL USER DATA
-========================================= */
+            try {
+                const res = await fetch('/api/v1/user/topup', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ amount: parseFloat(document.getElementById('topupAmount').value) })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    resultDiv.innerHTML = `<span class="text-red-400">❌ ${data.detail || 'Failed'}</span>`;
+                    return;
+                }
+                resultDiv.innerHTML = `<span class="text-green-400">✅ Top-up Successful!<br>New Balance: ZMW ${data.new_balance.toFixed(2)}</span>`;
+                document.getElementById('topupForm').reset();
+                loadAll();
+            } catch {
+                resultDiv.innerHTML = `<span class="text-red-400">❌ Network error</span>`;
+            }
+        });
 
-async function loadAll() {
-    if (state.loading) return;
+        // ========== AI CHAT ==========
+        function addAIMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'chat-bubble chat-ai';
+            div.innerHTML = text;
+            document.getElementById('chatBox').appendChild(div);
+            document.getElementById('chatBox').scrollTop = 9999;
+        }
 
-    state.loading = true;
+        function addUserMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'chat-bubble chat-user';
+            div.textContent = text;
+            document.getElementById('chatBox').appendChild(div);
+            document.getElementById('chatBox').scrollTop = 9999;
+        }
 
-    try {
-        await Promise.all([
-            loadProfile(),
-            loadStats(),
-            loadTransactions(),
-            loadNotifications()
-        ]);
+        document.getElementById('chatForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
 
-    } finally {
-        state.loading = false;
-    }
-}
+            addUserMessage(message);
+            input.value = '';
 
+            try {
+                const res = await fetch('/api/v1/user/ai-chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ message })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    addAIMessage(data.answer);
+                } else {
+                    addAIMessage("Sorry, I'm having trouble connecting right now. Please try again later.");
+                }
+            } catch {
+                addAIMessage("Network error. Please check your connection.");
+            }
+        });
 
-/* =========================================
-   INITIALIZATION
-========================================= */
+        function deleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This cannot be undone.')) {
+                alert('Account deletion request has been sent to the administrator.');
+            }
+        }
 
-document.addEventListener('DOMContentLoaded', () => {
-
-    $('wallpaperSelect').value = currentWallpaper;
-
-    resizeCanvas();
-
-    startWallpaper(currentWallpaper);
-
-    window.addEventListener('resize', resizeCanvas);
-
-    initializeChat();
-
-    loadAll();
-
-    // Refresh dashboard data every 20 seconds.
-    // Skip automatic requests when the browser tab is hidden.
-    state.refreshTimer = setInterval(() => {
-        if (!document.hidden) {
+        document.addEventListener('DOMContentLoaded', () => {
             loadAll();
-        }
-    }, 20000);
-
-});
-
-window.addEventListener('beforeunload', () => {
-    if (state.refreshTimer) {
-        clearInterval(state.refreshTimer);
-    }
-
-    if (animationId !== null) {
-        cancelAnimationFrame(animationId);
-    }
-});
-</script>
-
+            setInterval(loadAll, 20000);
+        });
+    </script>
 </body>
 </html>
