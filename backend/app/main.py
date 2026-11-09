@@ -1,19 +1,19 @@
+
 # ============================================================
-# THE GUARDIAN
-# main.py — Updated backend application
+# THE-GUARDIAN
+# Main FastAPI Application
 # ============================================================
 
 import os
 import json
 import uuid
-import asyncio
 import logging
-
-from datetime import datetime, timedelta
+import asyncio
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation
 from typing import Optional, Any
 
 from dotenv import load_dotenv
-
 load_dotenv()
 
 from fastapi import (
@@ -27,153 +27,75 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.security import OAuth2PasswordRequestForm
+
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func, inspect, text
+from sqlalchemy import (
+    or_,
+    func,
+    inspect,
+    text,
+    update,
+)
+from sqlalchemy.exc import SQLAlchemyError
+
 from starlette.middleware.sessions import SessionMiddleware
 from passlib.context import CryptContext
 
 from backend.app.core.config import settings
-from backend.app.models.transaction import TransactionRequest, FraudResponse
+from backend.app.models.transaction import TransactionRequest
 from backend.app.services.fraud_detector import detector
 from backend.app.db.database import engine, Base, get_db
 from backend.app.db import models
-from backend.app.db.models import User, Report, ActivityLog, Transaction
+
+from backend.app.db.models import (
+    User,
+    Transaction,
+    Report,
+    ActivityLog,
+    InvestigationCase,
+    WalletLedger,
+)
 
 
 # ============================================================
 # CONFIGURATION
 # ============================================================
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("the_guardian")
-
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
 )
+
+logger = logging.getLogger("THE-GUARDIAN")
+
+APP_NAME = "THE-GUARDIAN"
+AI_NAME = "AI NYASHA"
 
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "mulenga")
 
-SECRET_KEY = os.getenv(
-    "SECRET_KEY",
-    "CHANGE-THIS-SECRET-KEY-BEFORE-DEPLOYMENT"
-)
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    if os.getenv("RENDER"):
+        raise RuntimeError(
+            "SECRET_KEY must be configured in production."
+        )
+    SECRET_KEY = "development-only-change-this-secret"
 
 COOKIE_SECURE = os.getenv(
     "COOKIE_SECURE",
-    "true" if os.getenv("RENDER") else "false"
+    "false"
 ).lower() == "true"
 
-ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "ALLOWED_ORIGINS",
-        "http://localhost:8000,http://127.0.0.1:8000"
-    ).split(",")
-    if origin.strip()
-]
-
-
-# ============================================================
-# DATABASE INITIALIZATION
-# ============================================================
-
-# Importing models above registers their tables with Base.metadata.
-Base.metadata.create_all(bind=engine)
-
-
-def run_sqlite_migrations():
-    """
-    Adds optional transaction coordinate columns to existing SQLite
-    databases. New installations get these columns from models.py.
-    """
-
-    try:
-        if engine.dialect.name != "sqlite":
-            return
-
-        inspector = inspect(engine)
-
-        if not inspector.has_table("transactions"):
-            return
-
-        existing_columns = {
-            column["name"]
-            for column in inspector.get_columns("transactions")
-        }
-
-        with engine.begin() as connection:
-            if "location_lat" not in existing_columns:
-                connection.execute(
-                    text(
-                        "ALTER TABLE transactions "
-                        "ADD COLUMN location_lat FLOAT"
-                    )
-                )
-
-            if "location_lon" not in existing_columns:
-                connection.execute(
-                    text(
-                        "ALTER TABLE transactions "
-                        "ADD COLUMN location_lon FLOAT"
-                    )
-                )
-
-        logger.info("SQLite transaction migration checked successfully.")
-
-    except Exception:
-        logger.exception("SQLite migration failed.")
-        raise
-
-
-run_sqlite_migrations()
-
-
-# ============================================================
-# FASTAPI APPLICATION
-# ============================================================
-
-app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
-    description=(
-        "THE GUARDIAN — Real-Time Fraud Detection System "
-        "for Digital Wallets"
-    ),
-    docs_url="/docs",
-    redoc_url="/redoc"
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
 )
-
-
-# ============================================================
-# MIDDLEWARE
-# ============================================================
-
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=SECRET_KEY,
-    session_cookie="guardian_session",
-    max_age=60 * 60 * 24 * 14,
-    same_site="lax",
-    https_only=COOKIE_SECURE
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-)
-
-
-# ============================================================
-# TEMPLATES
-# ============================================================
 
 templates = Jinja2Templates(
     directory="backend/app/templates"
@@ -181,7 +103,318 @@ templates = Jinja2Templates(
 
 
 # ============================================================
-# AUTHENTICATION HELPERS
+# DATABASE INITIALIZATION AND MIGRATION
+# ============================================================
+
+Base.metadata.create_all(bind=engine)
+
+
+def run_database_migrations():
+    """
+    Adds balance_ngwee to existing users tables.
+
+    Existing ZMW balances are migrated into integer ngwee.
+    """
+
+    inspector = inspect(engine)
+
+    if not inspector.has_table("users"):
+        return
+
+    columns = {
+        column["name"]
+        for column in inspector.get_columns("users")
+    }
+
+    if "balance_ngwee" not in columns:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "ALTER TABLE users "
+                    "ADD COLUMN balance_ngwee "
+                    "INTEGER NOT NULL DEFAULT 0"
+                )
+            )
+
+            connection.execute(
+                text("""
+                    UPDATE users
+                    SET balance_ngwee = CAST(
+                        ROUND(COALESCE(balance, 0) * 100)
+                        AS INTEGER
+                    )
+                """)
+            )
+
+        logger.info(
+            "Existing wallet balances migrated to ngwee."
+        )
+
+
+run_database_migrations()
+
+
+# ============================================================
+# FASTAPI APPLICATION
+# ============================================================
+
+app = FastAPI(
+    title=APP_NAME,
+    description="Mobile Money Fraud Detection and Wallet Platform",
+    version="2.0.0",
+)
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    session_cookie="guardian_session",
+    same_site="lax",
+    https_only=COOKIE_SECURE,
+    max_age=60 * 60 * 24,
+)
+
+cors_origins = [
+    item.strip()
+    for item in os.getenv(
+        "CORS_ORIGINS",
+        ""
+    ).split(",")
+    if item.strip()
+]
+
+if cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allow_headers=["Content-Type", "Authorization"],
+    )
+
+
+# ============================================================
+# GENERAL HELPERS
+# ============================================================
+
+def utc_now():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password[:72])
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    try:
+        return pwd_context.verify(password[:72], hashed)
+    except Exception:
+        return False
+
+
+def amount_to_ngwee(value: Any) -> int:
+    """
+    Converts a monetary amount into integer ngwee.
+
+    Rejects amounts with more than two decimal places.
+    """
+
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid transaction amount."
+        )
+
+    if not amount.is_finite() or amount <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Amount must be greater than zero."
+        )
+
+    if amount != amount.quantize(Decimal("0.01")):
+        raise HTTPException(
+            status_code=400,
+            detail="Amount cannot have more than two decimal places."
+        )
+
+    return int(amount * 100)
+
+
+def ngwee_to_kwacha(value: int) -> float:
+    return round(int(value) / 100, 2)
+
+
+def enum_value(value):
+    return value.value if hasattr(value, "value") else str(value)
+
+
+def serialize_factors(factors):
+    result = []
+
+    for factor in factors or []:
+        if hasattr(factor, "model_dump"):
+            result.append(factor.model_dump())
+        elif hasattr(factor, "dict"):
+            result.append(factor.dict())
+        elif isinstance(factor, dict):
+            result.append(factor)
+
+    return result
+
+
+def get_user_phone(user: User) -> str:
+    return user.phone or user.username
+
+
+def log_activity(
+    db: Session,
+    action: str,
+    user_phone: Optional[str] = None,
+    details: Optional[str] = None,
+):
+    """
+    Adds an activity record without committing.
+
+    The caller controls the database transaction.
+    """
+
+    db.add(
+        ActivityLog(
+            user_phone=user_phone,
+            action=action,
+            details=details,
+        )
+    )
+
+
+def create_transaction_record(
+    db: Session,
+    tx_request: TransactionRequest,
+    fraud_result,
+    transaction_type: str = "TRANSFER",
+    location: Optional[str] = None,
+):
+    record = Transaction(
+        transaction_id=tx_request.transaction_id,
+        amount=float(tx_request.amount),
+        currency=tx_request.currency,
+        sender_msisdn=tx_request.sender_msisdn,
+        receiver_msisdn=tx_request.receiver_msisdn,
+        transaction_type=transaction_type,
+        channel=tx_request.channel,
+        location=location,
+        location_lat=tx_request.location_lat,
+        location_lon=tx_request.location_lon,
+        device_id=tx_request.sender_device_id,
+        risk_score=float(fraud_result.risk_score),
+        risk_level=str(fraud_result.risk_level),
+        decision=enum_value(fraud_result.decision),
+        recommendation=fraud_result.recommendation,
+        factors=json.dumps(
+            serialize_factors(fraud_result.factors)
+        ),
+        created_at=utc_now(),
+        processed_at=utc_now(),
+    )
+
+    db.add(record)
+    return record
+
+
+def get_transaction_location_fields(request: Request):
+    return {
+        "location_lat": None,
+        "location_lon": None,
+    }
+
+
+def calculate_sender_activity(
+    db: Session,
+    phone: str,
+):
+    now = utc_now()
+    hour_ago = now - timedelta(hours=1)
+    day_ago = now - timedelta(hours=24)
+
+    one_hour_count = db.query(Transaction).filter(
+        Transaction.sender_msisdn == phone,
+        Transaction.created_at >= hour_ago,
+    ).count()
+
+    daily_records = db.query(Transaction).filter(
+        Transaction.sender_msisdn == phone,
+        Transaction.created_at >= day_ago,
+        Transaction.decision == "ALLOW",
+    ).all()
+
+    daily_amount = sum(
+        float(item.amount or 0)
+        for item in daily_records
+    )
+
+    return {
+        "sender_tx_count_last_1h": one_hour_count,
+        "sender_tx_count_last_24h": len(daily_records),
+        "sender_total_amount_last_24h": daily_amount,
+    }
+
+
+def broadcast_dashboard_event(event: dict):
+    """
+    Broadcasts an event to connected admin dashboards.
+    """
+
+    async def send_event():
+        disconnected = []
+
+        for websocket in list(active_admin_connections):
+            try:
+                await websocket.send_json(event)
+            except Exception:
+                disconnected.append(websocket)
+
+        for websocket in disconnected:
+            active_admin_connections.discard(websocket)
+
+    try:
+        loop = asyncio.get_running_loop()
+        loop.create_task(send_event())
+    except RuntimeError:
+        pass
+
+
+def serialize_transaction(transaction: Transaction):
+    return {
+        "id": transaction.id,
+        "transaction_id": transaction.transaction_id,
+        "amount": float(transaction.amount),
+        "currency": transaction.currency,
+        "sender": transaction.sender_msisdn,
+        "receiver": transaction.receiver_msisdn,
+        "sender_msisdn": transaction.sender_msisdn,
+        "receiver_msisdn": transaction.receiver_msisdn,
+        "transaction_type": transaction.transaction_type,
+        "channel": transaction.channel,
+        "risk_score": float(transaction.risk_score),
+        "risk_level": transaction.risk_level,
+        "decision": transaction.decision,
+        "recommendation": transaction.recommendation,
+        "factors": json.loads(transaction.factors or "[]"),
+        "location": transaction.location,
+        "location_lat": transaction.location_lat,
+        "location_lon": transaction.location_lon,
+        "latitude": transaction.location_lat,
+        "longitude": transaction.location_lon,
+        "time": transaction.created_at.isoformat()
+        if transaction.created_at else None,
+        "created_at": transaction.created_at.isoformat()
+        if transaction.created_at else None,
+    }
+
+
+# ============================================================
+# AUTHENTICATION
 # ============================================================
 
 def get_current_admin(request: Request):
@@ -193,656 +426,356 @@ def get_current_normal_user(request: Request):
 
 
 def require_admin(request: Request):
-    """
-    Protects administrator-only API endpoints.
-    """
+    admin = get_current_admin(request)
 
-    if not get_current_admin(request):
+    if not admin:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=401,
             detail="Administrator authentication required."
         )
 
-    return True
+    return admin
 
 
 def require_user(request: Request):
-    """
-    Protects normal-user API endpoints.
-    """
+    user = get_current_normal_user(request)
 
-    current = get_current_normal_user(request)
-
-    if not current:
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=401,
             detail="User authentication required."
         )
 
-    return current
-
-
-def hash_password(password: str) -> str:
-    """
-    Bcrypt supports a maximum of 72 password bytes.
-    """
-
-    password_bytes = password.encode("utf-8")[:72]
-    safe_password = password_bytes.decode("utf-8", errors="ignore")
-
-    return pwd_context.hash(safe_password)
-
-
-def verify_password(password: str, hashed_password: str) -> bool:
-    password_bytes = password.encode("utf-8")[:72]
-    safe_password = password_bytes.decode("utf-8", errors="ignore")
-
-    try:
-        return pwd_context.verify(safe_password, hashed_password)
-    except Exception:
-        logger.warning("Password verification failed.")
-        return False
-
-
-def log_activity(
-    db: Session,
-    user_phone: str,
-    action: str,
-    details: Optional[str] = None
-):
-    """
-    Saves an activity record.
-    """
-
-    try:
-        log = ActivityLog(
-            user_phone=user_phone,
-            action=action,
-            details=details
-        )
-
-        db.add(log)
-        db.commit()
-
-    except Exception:
-        db.rollback()
-        logger.exception("Could not save activity log.")
-
-
-def serialize_factors(factors: Any) -> str:
-    """
-    Supports both Pydantic v1 and Pydantic v2.
-    """
-
-    serialized = []
-
-    for factor in factors or []:
-        if hasattr(factor, "model_dump"):
-            serialized.append(factor.model_dump())
-        elif hasattr(factor, "dict"):
-            serialized.append(factor.dict())
-        elif isinstance(factor, dict):
-            serialized.append(factor)
-        else:
-            serialized.append({"description": str(factor)})
-
-    return json.dumps(serialized)
-
-
-def enum_value(value: Any) -> str:
-    if hasattr(value, "value"):
-        return str(value.value)
-
-    return str(value)
-
-
-def get_transaction_location_fields(transaction: TransactionRequest):
-    """
-    Coordinates are optional. Only include them when the installed
-    SQLAlchemy Transaction model supports them.
-    """
-
-    fields = {}
-
-    if hasattr(Transaction, "location_lat"):
-        fields["location_lat"] = getattr(
-            transaction,
-            "location_lat",
-            None
-        )
-
-    if hasattr(Transaction, "location_lon"):
-        fields["location_lon"] = getattr(
-            transaction,
-            "location_lon",
-            None
-        )
-
-    return fields
-
-
-def create_transaction_record(
-    transaction: TransactionRequest,
-    result: FraudResponse,
-    transaction_type: Optional[str] = None,
-    location: Optional[str] = None,
-    device_id: Optional[str] = None
-):
-    """
-    Creates a database transaction record using the existing
-    SQLAlchemy Transaction model.
-    """
-
-    decision = enum_value(result.decision)
-
-    values = {
-        "transaction_id": result.transaction_id,
-        "amount": transaction.amount,
-        "currency": transaction.currency,
-        "sender_msisdn": transaction.sender_msisdn,
-        "receiver_msisdn": transaction.receiver_msisdn,
-        "transaction_type": transaction_type,
-        "channel": transaction.channel,
-        "location": location,
-        "device_id": device_id or transaction.sender_device_id,
-        "risk_score": result.risk_score,
-        "risk_level": result.risk_level,
-        "decision": decision,
-        "recommendation": result.recommendation,
-        "factors": serialize_factors(result.factors)
-    }
-
-    values.update(
-        get_transaction_location_fields(transaction)
-    )
-
-    return Transaction(**values)
-
-
-def calculate_sender_activity(
-    db: Session,
-    sender_phone: str
-):
-    """
-    Calculates sender transaction activity from stored records.
-    """
-
-    now = datetime.utcnow()
-    one_hour_ago = now - timedelta(hours=1)
-    one_day_ago = now - timedelta(hours=24)
-
-    last_hour = db.query(Transaction).filter(
-        Transaction.sender_msisdn == sender_phone,
-        Transaction.created_at >= one_hour_ago
-    ).count()
-
-    last_day_query = db.query(
-        func.count(Transaction.id),
-        func.coalesce(func.sum(Transaction.amount), 0)
-    ).filter(
-        Transaction.sender_msisdn == sender_phone,
-        Transaction.created_at >= one_day_ago
-    ).first()
-
-    count_24h = int(last_day_query[0] or 0)
-    amount_24h = float(last_day_query[1] or 0)
-
-    return last_hour, count_24h, amount_24h
+    return user
 
 
 # ============================================================
-# REAL-TIME ADMIN DASHBOARD WEBSOCKET
+# ADMIN WEBSOCKET
 # ============================================================
 
-class DashboardConnectionManager:
-
-    def __init__(self):
-        self.connections = set()
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.connections.add(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.connections.discard(websocket)
-
-    async def broadcast(self, event: dict):
-        disconnected = []
-
-        for connection in list(self.connections):
-            try:
-                await connection.send_json(event)
-            except Exception:
-                disconnected.append(connection)
-
-        for connection in disconnected:
-            self.disconnect(connection)
-
-
-dashboard_manager = DashboardConnectionManager()
-
-
-async def publish_dashboard_event(event: dict):
-    await dashboard_manager.broadcast(event)
+active_admin_connections = set()
 
 
 @app.websocket("/ws/dashboard")
 async def dashboard_websocket(websocket: WebSocket):
-    """
-    Admin-only dashboard event stream.
+    await websocket.accept()
 
-    Normal users are not permitted to connect to this endpoint.
-    """
-
-    session = websocket.scope.get("session", {})
-    admin_user = session.get("user")
-
-    if not admin_user:
+    if not websocket.session.get("user"):
         await websocket.close(code=1008)
         return
 
-    await dashboard_manager.connect(websocket)
+    active_admin_connections.add(websocket)
 
     try:
         await websocket.send_json({
-            "type": "connection",
-            "message": "THE GUARDIAN dashboard connected.",
-            "time": datetime.utcnow().isoformat()
+            "type": "CONNECTED",
+            "message": "THE-GUARDIAN live dashboard connected.",
+            "time": utc_now().isoformat(),
         })
 
         while True:
-            # Keeps the connection alive.
             await websocket.receive_text()
 
     except WebSocketDisconnect:
-        dashboard_manager.disconnect(websocket)
+        active_admin_connections.discard(websocket)
 
     except Exception:
-        dashboard_manager.disconnect(websocket)
-        logger.exception("Dashboard WebSocket error.")
+        active_admin_connections.discard(websocket)
 
 
 # ============================================================
-# AUTHENTICATION ROUTES
+# HOME AND HEALTH
 # ============================================================
 
-@app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-
-    if get_current_admin(request):
+@app.get("/", response_class=HTMLResponse)
+def home(request: Request):
+    if request.session.get("user"):
         return RedirectResponse(
-            url="/dashboard",
-            status_code=302
+            "/dashboard",
+            status_code=303
         )
 
-    if get_current_normal_user(request):
+    if request.session.get("normal_user"):
         return RedirectResponse(
-            url="/user/dashboard",
-            status_code=302
+            "/user/dashboard",
+            status_code=303
         )
 
-    return templates.TemplateResponse(
-        "login.html",
-        {
-            "request": request,
-            "error": None
-        }
+    return RedirectResponse(
+        "/login",
+        status_code=303
     )
 
 
-@app.post("/login", response_class=HTMLResponse)
-async def login(
+@app.get("/health")
+def health():
+    return {
+        "status": "online",
+        "application": APP_NAME,
+        "time": utc_now().isoformat(),
+    }
+
+
+# ============================================================
+# LOGIN AND LOGOUT
+# ============================================================
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request}
+    )
+
+
+@app.post("/login")
+def login(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-
-    # Administrator login.
     if (
         username == ADMIN_USERNAME
         and password == ADMIN_PASSWORD
     ):
         request.session.clear()
-        request.session["user"] = ADMIN_USERNAME
-
-        log_activity(
-            db,
-            "admin",
-            "Administrator Login",
-            "Administrator logged into THE GUARDIAN."
-        )
+        request.session["user"] = username
 
         return RedirectResponse(
-            url="/dashboard",
-            status_code=302
+            "/dashboard",
+            status_code=303
         )
 
-    # Normal user login.
     user = db.query(User).filter(
-        User.username == username
+        or_(
+            User.username == username,
+            User.phone == username,
+        )
     ).first()
 
-    if user and user.is_active and verify_password(
-        password,
-        user.password
+    if (
+        user
+        and user.is_active
+        and verify_password(password, user.password)
     ):
-
-        user.last_login = datetime.utcnow()
-        db.commit()
-
         request.session.clear()
-
         request.session["normal_user"] = {
             "id": user.id,
             "username": user.username,
-            "full_name": user.full_name,
-            "phone": user.phone
         }
+
+        user.last_login = utc_now()
 
         log_activity(
             db,
-            user.username,
-            "User Login",
-            f"{user.full_name} logged in."
+            "USER_LOGIN",
+            get_user_phone(user),
+            "Customer logged in."
         )
 
+        db.commit()
+
         return RedirectResponse(
-            url="/user/dashboard",
-            status_code=302
+            "/user/dashboard",
+            status_code=303
         )
 
     return templates.TemplateResponse(
         "login.html",
         {
             "request": request,
-            "error": "INVALID CREDENTIALS // ACCESS DENIED"
-        }
+            "error": "Invalid username or password.",
+        },
+        status_code=401,
     )
 
 
 @app.get("/logout")
-async def logout(request: Request):
+def admin_logout(request: Request):
     request.session.clear()
 
     return RedirectResponse(
-        url="/login",
-        status_code=302
+        "/login",
+        status_code=303
     )
 
 
 @app.get("/user/logout")
-async def user_logout(request: Request):
-    request.session.pop("normal_user", None)
+def user_logout(request: Request):
+    request.session.clear()
 
     return RedirectResponse(
-        url="/login",
-        status_code=302
+        "/login",
+        status_code=303
     )
 
 
 # ============================================================
-# ADMIN DASHBOARD
+# CUSTOMER REGISTRATION
 # ============================================================
 
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request):
-
-    if not get_current_admin(request):
-        return RedirectResponse(
-            url="/login",
-            status_code=302
-        )
-
+@app.get("/user/register", response_class=HTMLResponse)
+def registration_page(request: Request):
     return templates.TemplateResponse(
-        "dashboard.html",
+        "user_register.html",
         {"request": request}
     )
 
 
-# ============================================================
-# USER REGISTRATION
-# ============================================================
+@app.post("/user/register")
+def register_user(
+    request: Request,
+    username: str = Form(...),
+    full_name: str = Form(...),
+    phone: str = Form(...),
+    password: str = Form(...),
+    email: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    username = username.strip()
+    phone = phone.strip()
+    full_name = full_name.strip()
 
-@app.get("/user/register", response_class=HTMLResponse)
-async def user_register_page(request: Request):
-
-    if get_current_normal_user(request):
-        return RedirectResponse(
-            url="/user/dashboard",
-            status_code=302
+    if len(password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must contain at least 8 characters."
         )
 
+    existing = db.query(User).filter(
+        or_(
+            User.username == username,
+            User.phone == phone,
+            User.email == email if email else False,
+        )
+    ).first()
+
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Username, phone or email already registered."
+        )
+
+    user = User(
+        username=username,
+        full_name=full_name,
+        phone=phone,
+        email=email or None,
+        password=hash_password(password),
+        balance=0.0,
+        balance_ngwee=0,
+        is_active=True,
+        created_at=utc_now(),
+    )
+
+    db.add(user)
+
+    log_activity(
+        db,
+        "USER_REGISTERED",
+        phone,
+        "New customer account created."
+    )
+
+    db.commit()
+    db.refresh(user)
+
+    request.session.clear()
+    request.session["normal_user"] = {
+        "id": user.id,
+        "username": user.username,
+    }
+
+    return RedirectResponse(
+        "/user/dashboard",
+        status_code=303
+    )
+
+
+# ============================================================
+# DASHBOARD PAGES
+# ============================================================
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def admin_dashboard(
+    request: Request,
+    admin=Depends(require_admin),
+):
     return templates.TemplateResponse(
-        "user_register.html",
+        "dashboard.html",
         {
             "request": request,
-            "error": None,
-            "success": None
+            "admin": admin,
         }
     )
 
 
-@app.post("/user/register", response_class=HTMLResponse)
-async def user_register(
-    request: Request,
-    full_name: str = Form(...),
-    username: str = Form(...),
-    password: str = Form(...),
-    email: str = Form(None),
-    db: Session = Depends(get_db)
-):
-
-    full_name = full_name.strip()
-    username = username.strip()
-
-    if not full_name or not username or not password:
-        return templates.TemplateResponse(
-            "user_register.html",
-            {
-                "request": request,
-                "error": "Please complete all required fields.",
-                "success": None
-            }
-        )
-
-    if len(password) < 8:
-        return templates.TemplateResponse(
-            "user_register.html",
-            {
-                "request": request,
-                "error": "Password must contain at least 8 characters.",
-                "success": None
-            }
-        )
-
-    existing = db.query(User).filter(
-        User.username == username
-    ).first()
-
-    if existing:
-        return templates.TemplateResponse(
-            "user_register.html",
-            {
-                "request": request,
-                "error": "Phone number or username already registered.",
-                "success": None
-            }
-        )
-
-    try:
-        new_user = User(
-            username=username,
-            full_name=full_name,
-            password=hash_password(password),
-            phone=username,
-            email=email
-        )
-
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-
-        log_activity(
-            db,
-            username,
-            "New Account Created",
-            f"User {full_name} registered."
-        )
-
-        request.session.clear()
-
-        request.session["normal_user"] = {
-            "id": new_user.id,
-            "username": new_user.username,
-            "full_name": new_user.full_name,
-            "phone": new_user.phone
-        }
-
-        return RedirectResponse(
-            url="/user/dashboard",
-            status_code=302
-        )
-
-    except Exception:
-        db.rollback()
-        logger.exception("User registration failed.")
-
-        return templates.TemplateResponse(
-            "user_register.html",
-            {
-                "request": request,
-                "error": "Registration failed. Please try again.",
-                "success": None
-            }
-        )
-
-
-# ============================================================
-# USER DASHBOARD
-# ============================================================
-
 @app.get("/user/dashboard", response_class=HTMLResponse)
-async def user_dashboard(
+def user_dashboard(
     request: Request,
-    db: Session = Depends(get_db)
+    current=Depends(require_user),
 ):
-
-    current = get_current_normal_user(request)
-
-    if not current:
-        return RedirectResponse(
-            url="/login",
-            status_code=302
-        )
-
-    user = db.query(User).filter(
-        User.id == current["id"]
-    ).first()
-
-    if not user:
-        request.session.pop("normal_user", None)
-
-        return RedirectResponse(
-            url="/login",
-            status_code=302
-        )
-
     return templates.TemplateResponse(
         "user_dashboard.html",
         {
             "request": request,
-            "user": current
+            "user": current,
         }
     )
 
 
 @app.get("/user/login")
-async def redirect_old_user_login():
+def user_login_redirect():
     return RedirectResponse(
-        url="/login",
-        status_code=302
+        "/login",
+        status_code=303
     )
 
 
 # ============================================================
-# ROOT / HEALTH CHECK
+# FRAUD ANALYSIS
 # ============================================================
 
-@app.get("/")
-def root():
-    return {
-        "service": settings.APP_NAME,
-        "status": "online",
-        "system": "THE GUARDIAN",
-        "time": datetime.utcnow().isoformat()
-    }
-
-
-@app.get("/health")
-def health_check():
-    try:
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
-
-        return {
-            "status": "healthy",
-            "database": "connected"
-        }
-
-    except Exception:
-        logger.exception("Health check failed.")
-
-        raise HTTPException(
-            status_code=503,
-            detail="Database connection unavailable."
-        )
-
-
-# ============================================================
-# TRANSACTION ANALYSIS API
-# ============================================================
-
-@app.post(
-    "/api/v1/analyze",
-    response_model=FraudResponse
-)
-async def analyze_transaction(
-    transaction: TransactionRequest,
+@app.post("/api/v1/analyze")
+def analyze_transaction(
+    tx: TransactionRequest,
+    admin=Depends(require_admin),
     db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
 ):
+    existing = db.query(Transaction).filter(
+        Transaction.transaction_id == tx.transaction_id
+    ).first()
 
-    try:
-        existing = db.query(Transaction).filter(
-            Transaction.transaction_id == transaction.transaction_id
-        ).first()
-
-        if existing:
-            raise HTTPException(
-                status_code=409,
-                detail="Transaction ID already exists."
-            )
-
-        result = detector.analyze(transaction)
-
-        db_transaction = create_transaction_record(
-            transaction=transaction,
-            result=result
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Transaction ID already exists."
         )
 
-        db.add(db_transaction)
-        db.commit()
+    try:
+        fraud_result = detector.analyze(tx)
 
-        await publish_dashboard_event({
-            "type": "transaction",
-            "transaction_id": result.transaction_id,
-            "decision": enum_value(result.decision),
-            "risk_score": result.risk_score,
-            "time": datetime.utcnow().isoformat()
+        record = create_transaction_record(
+            db,
+            tx,
+            fraud_result,
+            transaction_type="FRAUD_ANALYSIS",
+        )
+
+        db.commit()
+        db.refresh(record)
+
+        broadcast_dashboard_event({
+            "type": "NEW_TRANSACTION",
+            "transaction": serialize_transaction(record),
         })
 
-        return result
+        return {
+            "success": True,
+            "transaction": serialize_transaction(record),
+            "fraud_result": fraud_result.model_dump(mode="json"),
+        }
 
     except HTTPException:
         db.rollback()
@@ -850,11 +783,11 @@ async def analyze_transaction(
 
     except Exception:
         db.rollback()
-        logger.exception("Transaction analysis failed.")
+        logger.exception("Fraud analysis failed.")
 
         raise HTTPException(
             status_code=500,
-            detail="Transaction analysis could not be completed."
+            detail="Transaction analysis failed."
         )
 
 
@@ -863,11 +796,10 @@ async def analyze_transaction(
 # ============================================================
 
 @app.get("/api/v1/dashboard/stats")
-def get_dashboard_stats(
+def dashboard_stats(
+    admin=Depends(require_admin),
     db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
 ):
-
     total = db.query(Transaction).count()
 
     allowed = db.query(Transaction).filter(
@@ -882,432 +814,90 @@ def get_dashboard_stats(
         Transaction.decision == "BLOCK"
     ).count()
 
+    def percentage(value):
+        return round(
+            (value / total) * 100,
+            2
+        ) if total else 0
+
     return {
         "total_transactions": total,
         "allowed": allowed,
         "review": review,
         "blocked": blocked,
-        "allowed_percentage": round(
-            allowed / total * 100 if total else 0,
-            1
-        ),
-        "review_percentage": round(
-            review / total * 100 if total else 0,
-            1
-        ),
-        "blocked_percentage": round(
-            blocked / total * 100 if total else 0,
-            1
-        )
+        "allowed_percentage": percentage(allowed),
+        "review_percentage": percentage(review),
+        "blocked_percentage": percentage(blocked),
+        "total_users": db.query(User).count(),
+        "active_users": db.query(User).filter(
+            User.is_active.is_(True)
+        ).count(),
     }
 
 
 @app.get("/api/v1/dashboard/recent")
-def get_dashboard_recent_transactions(
+def dashboard_recent(
+    limit: int = 20,
+    admin=Depends(require_admin),
     db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
 ):
-
-    transactions = db.query(Transaction).order_by(
-        Transaction.created_at.desc()
-    ).limit(15).all()
+    records = (
+        db.query(Transaction)
+        .order_by(Transaction.created_at.desc())
+        .limit(min(max(limit, 1), 100))
+        .all()
+    )
 
     return [
-        {
-            "transaction_id": tx.transaction_id,
-            "amount": tx.amount,
-            "currency": tx.currency or "ZMW",
-            "risk_score": tx.risk_score or 0,
-            "decision": tx.decision or "ALLOW",
-            "sender": tx.sender_msisdn or "N/A",
-            "receiver": tx.receiver_msisdn or "N/A",
-            "location": getattr(tx, "location", None),
-            "location_lat": getattr(tx, "location_lat", None),
-            "location_lon": getattr(tx, "location_lon", None),
-            "time": (
-                tx.created_at.strftime("%H:%M:%S")
-                if tx.created_at else "N/A"
-            )
-        }
-        for tx in transactions
+        serialize_transaction(item)
+        for item in records
     ]
 
 
 # ============================================================
-# ADMIN TRANSACTION MANAGEMENT
+# ADMIN TRANSACTIONS
 # ============================================================
 
 @app.get("/api/v1/admin/transactions")
-def get_admin_transactions(
-    limit: int = 200,
+def admin_transactions(
+    limit: int = 100,
+    decision: Optional[str] = None,
+    admin=Depends(require_admin),
     db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
 ):
+    query = db.query(Transaction)
 
-    limit = max(1, min(limit, 1000))
-
-    transactions = db.query(Transaction).order_by(
-        Transaction.created_at.desc()
-    ).limit(limit).all()
-
-    result = []
-
-    for tx in transactions:
-        try:
-            factors = json.loads(tx.factors or "[]")
-        except (ValueError, TypeError):
-            factors = []
-
-        result.append({
-            "transaction_id": tx.transaction_id,
-            "amount": tx.amount,
-            "currency": tx.currency or "ZMW",
-            "sender": tx.sender_msisdn,
-            "receiver": tx.receiver_msisdn,
-            "transaction_type": tx.transaction_type,
-            "channel": tx.channel,
-            "location": tx.location,
-            "location_lat": getattr(tx, "location_lat", None),
-            "location_lon": getattr(tx, "location_lon", None),
-            "device_id": tx.device_id,
-            "risk_score": tx.risk_score or 0,
-            "risk_level": tx.risk_level,
-            "decision": tx.decision,
-            "recommendation": tx.recommendation,
-            "factors": factors,
-            "created_at": (
-                tx.created_at.isoformat()
-                if tx.created_at else None
-            )
-        })
-
-    return result
-
-
-# ============================================================
-# ADMIN REPORT MANAGEMENT
-# ============================================================
-
-@app.get("/api/v1/admin/reports")
-def get_admin_reports(
-    db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
-):
-
-    reports = db.query(Report).order_by(
-        Report.created_at.desc()
-    ).all()
-
-    return [
-        {
-            "id": report.id,
-            "user_phone": report.user_phone,
-            "transaction_id": report.transaction_id,
-            "reason": report.reason,
-            "description": report.description,
-            "status": report.status,
-            "created_at": (
-                report.created_at.isoformat()
-                if report.created_at else None
-            )
-        }
-        for report in reports
-    ]
-
-
-@app.patch("/api/v1/admin/reports/{report_id}")
-def update_admin_report(
-    report_id: int,
-    status_value: str,
-    db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
-):
-
-    allowed_statuses = {
-        "Pending",
-        "Under Review",
-        "Resolved",
-        "Rejected"
-    }
-
-    if status_value not in allowed_statuses:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid report status."
+    if decision:
+        query = query.filter(
+            Transaction.decision == decision.upper()
         )
 
-    report = db.query(Report).filter(
-        Report.id == report_id
-    ).first()
-
-    if not report:
-        raise HTTPException(
-            status_code=404,
-            detail="Report not found."
-        )
-
-    report.status = status_value
-    db.commit()
-
-    log_activity(
-        db,
-        "admin",
-        "Report Status Updated",
-        f"Report {report_id} changed to {status_value}."
+    records = (
+        query.order_by(Transaction.created_at.desc())
+        .limit(min(max(limit, 1), 500))
+        .all()
     )
 
-    return {
-        "success": True,
-        "message": "Report status updated.",
-        "report_id": report_id,
-        "status": status_value
-    }
-
-
-# ============================================================
-# ADMIN INVESTIGATION CASES
-# ============================================================
-
-def get_investigation_model():
-    """
-    InvestigationCase will be added in the updated models.py.
-    This avoids breaking startup before that file is updated.
-    """
-
-    return getattr(models, "InvestigationCase", None)
-
-
-@app.get("/api/v1/admin/cases")
-def get_investigation_cases(
-    db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
-):
-
-    CaseModel = get_investigation_model()
-
-    if CaseModel is None:
-        return []
-
-    cases = db.query(CaseModel).order_by(
-        CaseModel.created_at.desc()
-    ).all()
-
     return [
-        {
-            "id": case.id,
-            "title": case.title,
-            "description": case.description,
-            "transaction_id": case.transaction_id,
-            "status": case.status,
-            "priority": case.priority,
-            "assigned_to": case.assigned_to,
-            "created_at": (
-                case.created_at.isoformat()
-                if case.created_at else None
-            )
-        }
-        for case in cases
-    ]
-
-
-class InvestigationCaseCreate(BaseModel):
-    title: str = Field(..., min_length=3, max_length=200)
-    description: Optional[str] = None
-    transaction_id: Optional[str] = None
-    priority: str = "Medium"
-    assigned_to: Optional[str] = None
-
-
-class InvestigationCaseUpdate(BaseModel):
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    assigned_to: Optional[str] = None
-    description: Optional[str] = None
-
-
-@app.post("/api/v1/admin/cases")
-def create_investigation_case(
-    data: InvestigationCaseCreate,
-    db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
-):
-
-    CaseModel = get_investigation_model()
-
-    if CaseModel is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Investigation model is not installed yet."
-        )
-
-    if data.transaction_id:
-        transaction = db.query(Transaction).filter(
-            Transaction.transaction_id == data.transaction_id
-        ).first()
-
-        if not transaction:
-            raise HTTPException(
-                status_code=404,
-                detail="Related transaction not found."
-            )
-
-    try:
-        case = CaseModel(
-            title=data.title,
-            description=data.description,
-            transaction_id=data.transaction_id,
-            priority=data.priority,
-            assigned_to=data.assigned_to,
-            status="Open"
-        )
-
-        db.add(case)
-        db.commit()
-        db.refresh(case)
-
-        log_activity(
-            db,
-            "admin",
-            "Investigation Case Created",
-            f"Created case {case.id}: {case.title}"
-        )
-
-        return {
-            "success": True,
-            "case_id": case.id,
-            "message": "Investigation case created."
-        }
-
-    except Exception:
-        db.rollback()
-        logger.exception("Investigation case creation failed.")
-
-        raise HTTPException(
-            status_code=500,
-            detail="Could not create investigation case."
-        )
-
-
-@app.patch("/api/v1/admin/cases/{case_id}")
-def update_investigation_case(
-    case_id: int,
-    data: InvestigationCaseUpdate,
-    db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
-):
-
-    CaseModel = get_investigation_model()
-
-    if CaseModel is None:
-        raise HTTPException(
-            status_code=503,
-            detail="Investigation model is not installed yet."
-        )
-
-    case = db.query(CaseModel).filter(
-        CaseModel.id == case_id
-    ).first()
-
-    if not case:
-        raise HTTPException(
-            status_code=404,
-            detail="Investigation case not found."
-        )
-
-    allowed_statuses = {
-        "Open",
-        "In Progress",
-        "Under Review",
-        "Closed"
-    }
-
-    allowed_priorities = {
-        "Low",
-        "Medium",
-        "High",
-        "Critical"
-    }
-
-    if data.status is not None:
-        if data.status not in allowed_statuses:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid case status."
-            )
-
-        case.status = data.status
-
-    if data.priority is not None:
-        if data.priority not in allowed_priorities:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid case priority."
-            )
-
-        case.priority = data.priority
-
-    if data.assigned_to is not None:
-        case.assigned_to = data.assigned_to
-
-    if data.description is not None:
-        case.description = data.description
-
-    db.commit()
-
-    log_activity(
-        db,
-        "admin",
-        "Investigation Case Updated",
-        f"Updated investigation case {case_id}."
-    )
-
-    return {
-        "success": True,
-        "message": "Investigation case updated."
-    }
-
-
-# ============================================================
-# ADMIN ACTIVITY LOGS
-# ============================================================
-
-@app.get("/api/v1/admin/activity")
-def get_activity_logs(
-    db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
-):
-
-    logs = db.query(ActivityLog).order_by(
-        ActivityLog.created_at.desc()
-    ).limit(100).all()
-
-    return [
-        {
-            "user_phone": log.user_phone or "System",
-            "action": log.action,
-            "details": log.details or "",
-            "time": (
-                log.created_at.strftime("%Y-%m-%d %H:%M:%S")
-                if log.created_at else ""
-            )
-        }
-        for log in logs
+        serialize_transaction(item)
+        for item in records
     ]
 
 
 # ============================================================
-# ADMIN USER MANAGEMENT
+# ADMIN USERS
 # ============================================================
 
 @app.get("/api/v1/admin/users")
-def get_all_users(
+def admin_users(
+    admin=Depends(require_admin),
     db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
 ):
-
-    users = db.query(User).order_by(
-        User.created_at.desc()
-    ).all()
+    users = (
+        db.query(User)
+        .order_by(User.created_at.desc())
+        .all()
+    )
 
     return [
         {
@@ -1315,29 +905,25 @@ def get_all_users(
             "username": user.username,
             "full_name": user.full_name,
             "phone": user.phone,
-            "email": user.email or "N/A",
-            "balance": user.balance or 0.0,
+            "email": user.email,
+            "balance": ngwee_to_kwacha(user.balance_ngwee),
+            "balance_ngwee": user.balance_ngwee,
             "is_active": user.is_active,
-            "last_login": (
-                user.last_login.strftime("%Y-%m-%d %H:%M")
-                if user.last_login else "Never"
-            ),
-            "created_at": (
-                user.created_at.strftime("%Y-%m-%d %H:%M")
-                if user.created_at else ""
-            )
+            "last_login": user.last_login.isoformat()
+            if user.last_login else None,
+            "created_at": user.created_at.isoformat()
+            if user.created_at else None,
         }
         for user in users
     ]
 
 
 @app.delete("/api/v1/admin/users/{user_id}")
-def delete_user(
+def disable_user(
     user_id: int,
+    admin=Depends(require_admin),
     db: Session = Depends(get_db),
-    admin: bool = Depends(require_admin)
 ):
-
     user = db.query(User).filter(
         User.id == user_id
     ).first()
@@ -1348,246 +934,195 @@ def delete_user(
             detail="User not found."
         )
 
-    try:
-        username = user.username
-        full_name = user.full_name
-
-        db.delete(user)
-        db.commit()
-
-        log_activity(
-            db,
-            "admin",
-            "User Deleted",
-            f"Deleted user {username} ({full_name})."
-        )
-
-        return {
-            "success": True,
-            "message": "User deleted successfully."
-        }
-
-    except Exception:
-        db.rollback()
-        logger.exception("User deletion failed.")
-
-        raise HTTPException(
-            status_code=500,
-            detail="Could not delete user."
-        )
-
-
-# ============================================================
-# USER PROFILE API
-# ============================================================
-
-@app.get("/api/v1/user/profile")
-def get_user_profile(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-
-    current = require_user(request)
-
-    user = db.query(User).filter(
-        User.id == current["id"]
-    ).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found."
-        )
-
-    return {
-        "id": user.id,
-        "username": user.username,
-        "full_name": user.full_name,
-        "phone": user.phone,
-        "email": user.email or "",
-        "balance": user.balance or 0.0,
-        "is_active": user.is_active,
-        "last_login": (
-            user.last_login.strftime("%Y-%m-%d %H:%M")
-            if user.last_login else "Never"
-        ),
-        "created_at": (
-            user.created_at.strftime("%Y-%m-%d %H:%M")
-            if user.created_at else ""
-        )
-    }
-
-
-@app.put("/api/v1/user/profile")
-def update_user_profile(
-    request: Request,
-    full_name: str = Form(...),
-    email: str = Form(None),
-    db: Session = Depends(get_db)
-):
-
-    current = require_user(request)
-
-    user = db.query(User).filter(
-        User.id == current["id"]
-    ).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found."
-        )
-
-    user.full_name = full_name.strip()
-    user.email = email
-
-    db.commit()
-
-    request.session["normal_user"]["full_name"] = user.full_name
+    user.is_active = False
 
     log_activity(
         db,
-        user.username,
-        "Profile Updated",
-        "User updated profile details."
+        "USER_DISABLED",
+        get_user_phone(user),
+        "Account disabled by administrator."
     )
+
+    db.commit()
 
     return {
         "success": True,
-        "message": "Profile updated successfully."
+        "message": "User account disabled."
     }
 
 
 # ============================================================
-# USER TRANSACTION HISTORY
+# ADMIN ACTIVITY LOG
 # ============================================================
 
-@app.get("/api/v1/user/transactions")
-def get_user_transactions(
-    request: Request,
-    db: Session = Depends(get_db)
+@app.get("/api/v1/admin/activity")
+def admin_activity(
+    limit: int = 100,
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-
-    current = require_user(request)
-
-    user = db.query(User).filter(
-        User.id == current["id"]
-    ).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found."
-        )
-
-    transactions = db.query(Transaction).filter(
-        or_(
-            Transaction.sender_msisdn == user.phone,
-            Transaction.receiver_msisdn == user.phone
-        )
-    ).order_by(
-        Transaction.created_at.desc()
-    ).limit(50).all()
+    activities = (
+        db.query(ActivityLog)
+        .order_by(ActivityLog.created_at.desc())
+        .limit(min(max(limit, 1), 500))
+        .all()
+    )
 
     return [
         {
-            "transaction_id": tx.transaction_id,
-            "amount": tx.amount,
-            "currency": tx.currency or "ZMW",
-            "sender": tx.sender_msisdn,
-            "receiver": tx.receiver_msisdn,
-            "risk_score": tx.risk_score,
-            "decision": tx.decision,
-            "time": (
-                tx.created_at.strftime("%Y-%m-%d %H:%M")
-                if tx.created_at else ""
-            )
+            "id": item.id,
+            "action": item.action,
+            "user_phone": item.user_phone,
+            "details": item.details,
+            "time": item.created_at.isoformat()
+            if item.created_at else None,
         }
-        for tx in transactions
+        for item in activities
     ]
 
 
 # ============================================================
-# USER TRANSACTION STATISTICS
+# ADMIN REPORTS
 # ============================================================
 
-@app.get("/api/v1/user/stats")
-def get_user_stats(
-    request: Request,
-    db: Session = Depends(get_db)
+@app.get("/api/v1/admin/reports")
+def admin_reports(
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
-
-    current = require_user(request)
-
-    user = db.query(User).filter(
-        User.id == current["id"]
-    ).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found."
-        )
-
-    user_filter = or_(
-        Transaction.sender_msisdn == user.phone,
-        Transaction.receiver_msisdn == user.phone
+    reports = (
+        db.query(Report)
+        .order_by(Report.created_at.desc())
+        .all()
     )
 
-    total = db.query(Transaction).filter(
-        user_filter
-    ).count()
+    return [
+        {
+            "id": item.id,
+            "user_phone": item.user_phone,
+            "transaction_id": item.transaction_id,
+            "reason": item.reason,
+            "description": item.description,
+            "status": item.status,
+            "created_at": item.created_at.isoformat()
+            if item.created_at else None,
+        }
+        for item in reports
+    ]
 
-    allowed = db.query(Transaction).filter(
-        user_filter,
-        Transaction.decision == "ALLOW"
-    ).count()
 
-    review = db.query(Transaction).filter(
-        user_filter,
-        Transaction.decision == "REVIEW"
-    ).count()
+class ReportUpdate(BaseModel):
+    status: str = Field(..., min_length=2, max_length=30)
 
-    blocked = db.query(Transaction).filter(
-        user_filter,
-        Transaction.decision == "BLOCK"
-    ).count()
+
+@app.patch("/api/v1/admin/reports/{report_id}")
+def update_report(
+    report_id: int,
+    payload: ReportUpdate,
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    report = db.query(Report).filter(
+        Report.id == report_id
+    ).first()
+
+    if not report:
+        raise HTTPException(
+            status_code=404,
+            detail="Report not found."
+        )
+
+    allowed_statuses = {
+        "PENDING",
+        "INVESTIGATING",
+        "RESOLVED",
+        "REJECTED",
+    }
+
+    new_status = payload.status.upper()
+
+    if new_status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid report status."
+        )
+
+    report.status = new_status
+
+    log_activity(
+        db,
+        "REPORT_UPDATED",
+        report.user_phone,
+        f"Report {report.id} changed to {new_status}."
+    )
+
+    db.commit()
 
     return {
-        "total_transactions": total,
-        "allowed": allowed,
-        "review": review,
-        "blocked": blocked,
-        "balance": user.balance or 0.0
+        "success": True,
+        "status": report.status,
     }
 
 
 # ============================================================
-# USER FRAUD REPORTING
+# ADMIN INVESTIGATION CASES
 # ============================================================
 
-@app.post("/api/v1/user/report")
-def report_suspicious(
-    request: Request,
-    transaction_id: str = Form(...),
-    reason: str = Form(...),
-    db: Session = Depends(get_db)
+class CaseCreate(BaseModel):
+    transaction_id: str = Field(..., min_length=1, max_length=100)
+    assigned_to: Optional[str] = Field(None, max_length=100)
+    priority: str = Field(default="MEDIUM", max_length=30)
+    findings: Optional[str] = None
+
+
+class CaseUpdate(BaseModel):
+    status: Optional[str] = None
+    assigned_to: Optional[str] = None
+    priority: Optional[str] = None
+    findings: Optional[str] = None
+    resolution: Optional[str] = None
+
+
+def serialize_case(case: InvestigationCase):
+    return {
+        "id": case.id,
+        "transaction_id": case.transaction_id,
+        "assigned_to": case.assigned_to,
+        "status": case.status,
+        "priority": case.priority,
+        "findings": case.findings,
+        "resolution": case.resolution,
+        "title": f"Investigation: {case.transaction_id}",
+        "description": case.findings or "",
+        "created_at": case.created_at.isoformat()
+        if case.created_at else None,
+        "updated_at": case.updated_at.isoformat()
+        if case.updated_at else None,
+    }
+
+
+@app.get("/api/v1/admin/cases")
+def admin_cases(
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
 ):
+    cases = (
+        db.query(InvestigationCase)
+        .order_by(InvestigationCase.created_at.desc())
+        .all()
+    )
 
-    current = require_user(request)
+    return [serialize_case(case) for case in cases]
 
-    user = db.query(User).filter(
-        User.id == current["id"]
-    ).first()
 
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found."
-        )
-
+@app.post("/api/v1/admin/cases")
+def create_case(
+    payload: CaseCreate,
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     transaction = db.query(Transaction).filter(
-        Transaction.transaction_id == transaction_id
+        Transaction.transaction_id == payload.transaction_id
     ).first()
 
     if not transaction:
@@ -1596,371 +1131,652 @@ def report_suspicious(
             detail="Transaction not found."
         )
 
-    # Users may only report transactions involving their own account.
-    if (
-        transaction.sender_msisdn != user.phone
-        and transaction.receiver_msisdn != user.phone
-    ):
-        raise HTTPException(
-            status_code=403,
-            detail="You cannot report a transaction unrelated to your account."
-        )
-
-    new_report = Report(
-        user_phone=user.phone,
-        transaction_id=transaction_id,
-        reason=reason.strip(),
-        status="Pending"
+    case = InvestigationCase(
+        transaction_id=payload.transaction_id,
+        assigned_to=payload.assigned_to,
+        priority=payload.priority.upper(),
+        findings=payload.findings,
+        status="OPEN",
     )
 
-    try:
-        db.add(new_report)
-        db.commit()
+    db.add(case)
 
-        log_activity(
-            db,
-            user.username,
-            "Fraud Report Submitted",
-            f"Reported TXN: {transaction_id} - {reason}"
+    log_activity(
+        db,
+        "INVESTIGATION_CREATED",
+        transaction.sender_msisdn,
+        f"Investigation opened for {payload.transaction_id}."
+    )
+
+    db.commit()
+    db.refresh(case)
+
+    return {
+        "success": True,
+        "case": serialize_case(case),
+    }
+
+
+@app.patch("/api/v1/admin/cases/{case_id}")
+def update_case(
+    case_id: int,
+    payload: CaseUpdate,
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    case = db.query(InvestigationCase).filter(
+        InvestigationCase.id == case_id
+    ).first()
+
+    if not case:
+        raise HTTPException(
+            status_code=404,
+            detail="Investigation case not found."
         )
 
-        return {
-            "success": True,
-            "message": "Report submitted successfully. Admin will review it."
+    if payload.status is not None:
+        allowed = {
+            "OPEN",
+            "IN_PROGRESS",
+            "RESOLVED",
+            "CLOSED",
         }
 
-    except Exception:
-        db.rollback()
-        logger.exception("Fraud report submission failed.")
+        if payload.status.upper() not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid investigation status."
+            )
 
+        case.status = payload.status.upper()
+
+    if payload.priority is not None:
+        case.priority = payload.priority.upper()
+
+    if payload.assigned_to is not None:
+        case.assigned_to = payload.assigned_to
+
+    if payload.findings is not None:
+        case.findings = payload.findings
+
+    if payload.resolution is not None:
+        case.resolution = payload.resolution
+
+    case.updated_at = utc_now()
+
+    log_activity(
+        db,
+        "INVESTIGATION_UPDATED",
+        None,
+        f"Investigation case {case.id} updated."
+    )
+
+    db.commit()
+    db.refresh(case)
+
+    return {
+        "success": True,
+        "case": serialize_case(case),
+    }
+
+
+# ============================================================
+# CUSTOMER AUTHENTICATION HELPER
+# ============================================================
+
+def get_authenticated_user(
+    current: dict,
+    db: Session,
+):
+    user = db.query(User).filter(
+        User.id == current["id"]
+    ).first()
+
+    if not user or not user.is_active:
         raise HTTPException(
-            status_code=500,
-            detail="Could not submit fraud report."
+            status_code=401,
+            detail="User account unavailable."
         )
 
+    return user
+
 
 # ============================================================
-# USER NOTIFICATIONS
+# CUSTOMER PROFILE
 # ============================================================
 
-@app.get("/api/v1/user/notifications")
-def get_user_notifications(
-    request: Request,
-    db: Session = Depends(get_db)
+@app.get("/api/v1/user/profile")
+def user_profile(
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
 ):
+    user = get_authenticated_user(current, db)
 
-    current = require_user(request)
+    return {
+        "id": user.id,
+        "username": user.username,
+        "full_name": user.full_name,
+        "phone": user.phone,
+        "email": user.email,
+        "balance": ngwee_to_kwacha(user.balance_ngwee),
+        "balance_ngwee": user.balance_ngwee,
+        "currency": "ZMW",
+        "is_active": user.is_active,
+    }
 
-    activities = db.query(ActivityLog).filter(
-        ActivityLog.user_phone == current["username"]
-    ).order_by(
-        ActivityLog.created_at.desc()
-    ).limit(15).all()
+
+class ProfileUpdate(BaseModel):
+    full_name: Optional[str] = Field(None, max_length=150)
+    email: Optional[str] = Field(None, max_length=150)
+
+
+@app.put("/api/v1/user/profile")
+def update_profile(
+    payload: ProfileUpdate,
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    user = get_authenticated_user(current, db)
+
+    if payload.email:
+        existing = db.query(User).filter(
+            User.email == payload.email,
+            User.id != user.id,
+        ).first()
+
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail="Email address is already in use."
+            )
+
+    if payload.full_name is not None:
+        user.full_name = payload.full_name.strip()
+
+    if payload.email is not None:
+        user.email = payload.email.strip() or None
+
+    log_activity(
+        db,
+        "PROFILE_UPDATED",
+        get_user_phone(user),
+        "Customer profile updated."
+    )
+
+    db.commit()
+
+    return {
+        "success": True,
+        "message": "Profile updated."
+    }
+
+
+# ============================================================
+# CUSTOMER TRANSACTION HISTORY
+# ============================================================
+
+@app.get("/api/v1/user/transactions")
+def user_transactions(
+    limit: int = 100,
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    user = get_authenticated_user(current, db)
+    phone = get_user_phone(user)
+
+    records = (
+        db.query(Transaction)
+        .filter(
+            or_(
+                Transaction.sender_msisdn == phone,
+                Transaction.receiver_msisdn == phone,
+            )
+        )
+        .order_by(Transaction.created_at.desc())
+        .limit(min(max(limit, 1), 500))
+        .all()
+    )
 
     return [
-        {
-            "action": activity.action,
-            "details": activity.details or "",
-            "time": (
-                activity.created_at.strftime("%Y-%m-%d %H:%M")
-                if activity.created_at else ""
-            )
-        }
-        for activity in activities
+        serialize_transaction(item)
+        for item in records
     ]
 
 
-# ============================================================
-# MULENGA — LOCAL AI ASSISTANT
-# ============================================================
-
-class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=1, max_length=2000)
-
-
-@app.post("/api/v1/user/ai-chat")
-async def user_ai_chat(
-    request: Request,
-    data: ChatRequest
+@app.get("/api/v1/user/stats")
+def user_stats(
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
 ):
+    user = get_authenticated_user(current, db)
+    phone = get_user_phone(user)
 
-    require_user(request)
+    sent = db.query(Transaction).filter(
+        Transaction.sender_msisdn == phone,
+        Transaction.decision == "ALLOW",
+    ).all()
 
-    message = data.message.lower().strip()
+    received = db.query(Transaction).filter(
+        Transaction.receiver_msisdn == phone,
+        Transaction.decision == "ALLOW",
+    ).all()
 
-    if any(word in message for word in [
-        "hello", "hi", "hey", "mwaiseni", "takulandilani"
-    ]):
-        answer = (
-            "Mwaiseni! Takulandilani. I am Mulenga, your AI assistant "
-            "in THE GUARDIAN system. How can I help you today?"
-        )
-
-    elif any(word in message for word in [
-        "balance", "money", "how much"
-    ]):
-        answer = (
-            "You can check your current wallet balance on the Home page "
-            "or in the Wallet section of your dashboard."
-        )
-
-    elif any(word in message for word in [
-        "fraud", "scam", "suspicious", "block"
-    ]):
-        answer = (
-            "THE GUARDIAN uses real-time fraud detection. If you see "
-            "a suspicious transaction, go to Report Fraud and submit "
-            "the Transaction ID. The administrator can review your report."
-        )
-
-    elif any(word in message for word in [
-        "send money", "transfer", "airtel"
-    ]):
-        answer = (
-            "To send money, go to the Wallet section, choose Send Money, "
-            "enter the recipient's phone number and amount, then confirm. "
-            "Transfers are subject to fraud screening."
-        )
-
-    elif any(word in message for word in [
-        "top up", "topup", "deposit"
-    ]):
-        answer = (
-            "To top up your demo wallet, go to the Wallet section "
-            "and select Top Up. Demo top-ups are not verified Airtel "
-            "Money payments."
-        )
-
-    elif any(word in message for word in [
-        "transaction", "history", "statement"
-    ]):
-        answer = (
-            "You can view your recorded transactions in the History "
-            "section of your dashboard."
-        )
-
-    elif any(word in message for word in [
-        "who are you", "your name", "mulenga"
-    ]):
-        answer = (
-            "I am Mulenga, the AI assistant of THE GUARDIAN, created "
-            "as part of Engineer Aubrey Mulenga's project to help "
-            "protect digital wallet users."
-        )
-
-    elif any(word in message for word in [
-        "help", "assist", "support"
-    ]):
-        answer = (
-            "I can help you understand your wallet, sending money, "
-            "reporting fraud, viewing transactions and how THE GUARDIAN "
-            "screens transactions."
-        )
-
-    elif any(word in message for word in [
-        "thank", "thanks"
-    ]):
-        answer = "You're welcome! Stay safe with THE GUARDIAN."
-
-    else:
-        answer = (
-            "I'm still learning. You can ask me about your balance, "
-            "sending money, reporting fraud or how THE GUARDIAN "
-            "protects your transactions."
-        )
-
-    return {"answer": answer}
+    return {
+        "balance": ngwee_to_kwacha(user.balance_ngwee),
+        "balance_ngwee": user.balance_ngwee,
+        "total_sent": round(
+            sum(float(item.amount) for item in sent),
+            2
+        ),
+        "total_received": round(
+            sum(float(item.amount) for item in received),
+            2
+        ),
+        "transactions_count": len(sent) + len(received),
+        "currency": "ZMW",
+    }
 
 
 # ============================================================
 # WALLET REQUEST MODELS
 # ============================================================
 
-class AirtelTransferRequest(BaseModel):
-    recipient_phone: str = Field(
-        ...,
-        min_length=9,
-        max_length=15
-    )
-
-    amount: float = Field(
-        ...,
-        gt=0,
-        le=500000
-    )
-
-    note: Optional[str] = Field(
-        default=None,
-        max_length=250
-    )
+class WalletTransferRequest(BaseModel):
+    recipient_phone: str = Field(..., min_length=5, max_length=20)
+    amount: Decimal = Field(..., gt=0, le=500000)
+    note: Optional[str] = Field(None, max_length=250)
 
 
-class TopUpRequest(BaseModel):
-    amount: float = Field(
-        ...,
-        gt=0,
-        le=10000
-    )
+class WalletTopUpRequest(BaseModel):
+    amount: Decimal = Field(..., gt=0, le=10000)
+
+
+class WalletWithdrawRequest(BaseModel):
+    recipient_phone: str = Field(..., min_length=5, max_length=20)
+    amount: Decimal = Field(..., gt=0, le=500000)
+
+
+class AirtimePurchaseRequest(BaseModel):
+    phone: str = Field(..., min_length=5, max_length=20)
+    amount: Decimal = Field(..., gt=0, le=10000)
+    network: str = Field(default="Airtel", max_length=30)
 
 
 # ============================================================
-# AIRTEL / INTERNAL WALLET TRANSFER
+# WALLET CORE
 # ============================================================
 
-@app.post("/api/v1/user/airtel-transfer")
-async def airtel_money_transfer(
-    request: Request,
-    data: AirtelTransferRequest,
-    db: Session = Depends(get_db)
+def add_wallet_ledger(
+    db: Session,
+    user: User,
+    transaction_id: str,
+    direction: str,
+    amount_ngwee: int,
+    description: str,
 ):
-
-    current = require_user(request)
-
-    sender = db.query(User).filter(
-        User.id == current["id"]
-    ).first()
-
-    if not sender:
-        raise HTTPException(
-            status_code=404,
-            detail="Sender account not found."
+    db.add(
+        WalletLedger(
+            transaction_id=transaction_id,
+            user_id=user.id,
+            direction=direction,
+            amount_ngwee=amount_ngwee,
+            balance_after_ngwee=user.balance_ngwee,
+            description=description,
+            created_at=utc_now(),
         )
+    )
 
-    recipient_phone = data.recipient_phone.strip()
 
-    if recipient_phone == sender.phone:
-        raise HTTPException(
-            status_code=400,
-            detail="You cannot transfer money to your own account."
-        )
-
-    sender.balance = float(sender.balance or 0)
-
-    if sender.balance < data.amount:
-        raise HTTPException(
-            status_code=400,
-            detail="Insufficient wallet balance."
-        )
-
-    receiver = db.query(User).filter(
-        User.phone == recipient_phone
-    ).first()
-
-    # Calculate real sender transaction activity.
-    count_1h, count_24h, amount_24h = calculate_sender_activity(
+def run_wallet_fraud_check(
+    db: Session,
+    sender_phone: str,
+    receiver_phone: str,
+    amount_ngwee: int,
+    channel: str,
+    transaction_type: str,
+):
+    activity = calculate_sender_activity(
         db,
-        sender.phone
+        sender_phone
     )
 
-    # Check whether the recipient has previously received funds.
-    previous_beneficiary_transactions = db.query(Transaction).filter(
-        Transaction.receiver_msisdn == recipient_phone
-    ).count()
-
-    receiver_is_new = previous_beneficiary_transactions == 0
-
-    transaction_id = (
-        f"GUARDIAN-{datetime.utcnow().strftime('%Y%m%d')}-"
-        f"{uuid.uuid4().hex[:10].upper()}"
-    )
-
-    transaction_request = TransactionRequest(
-        transaction_id=transaction_id,
-        amount=data.amount,
+    tx_request = TransactionRequest(
+        transaction_id=f"GRD-{uuid.uuid4().hex[:16].upper()}",
+        amount=ngwee_to_kwacha(amount_ngwee),
         currency="ZMW",
-        sender_msisdn=sender.phone,
-        receiver_msisdn=recipient_phone,
-        sender_device_id="USER-APP",
-        receiver_is_new=receiver_is_new,
-        channel="mobile_money",
-        timestamp=datetime.utcnow(),
-        sender_tx_count_last_1h=count_1h,
-        sender_tx_count_last_24h=count_24h,
-        sender_total_amount_last_24h=amount_24h,
-        is_international=False,
-        beneficiary_risk_score=0.0
+        sender_msisdn=sender_phone,
+        receiver_msisdn=receiver_phone,
+        channel=channel,
+        timestamp=datetime.now(timezone.utc),
+        sender_tx_count_last_1h=activity[
+            "sender_tx_count_last_1h"
+        ],
+        sender_tx_count_last_24h=activity[
+            "sender_tx_count_last_24h"
+        ],
+        sender_total_amount_last_24h=activity[
+            "sender_total_amount_last_24h"
+        ],
     )
+
+    result = detector.analyze(tx_request)
+
+    return tx_request, result
+
+
+def wallet_decision_response(result):
+    decision = enum_value(result.decision)
+
+    return {
+        "success": False,
+        "decision": decision,
+        "risk_score": result.risk_score,
+        "risk_level": result.risk_level,
+        "recommendation": result.recommendation,
+        "message": (
+            "Transaction blocked by THE-GUARDIAN."
+            if decision == "BLOCK"
+            else "Transaction held for security review."
+        ),
+    }
+
+
+def commit_fraud_attempt(
+    db: Session,
+    tx_request,
+    result,
+    transaction_type: str,
+):
+    record = create_transaction_record(
+        db,
+        tx_request,
+        result,
+        transaction_type=transaction_type,
+    )
+
+    db.commit()
+    db.refresh(record)
+
+    broadcast_dashboard_event({
+        "type": "FRAUD_ALERT",
+        "transaction": serialize_transaction(record),
+    })
+
+    return record
+
+
+# ============================================================
+# WALLET TOP-UP
+# ============================================================
+
+@app.post("/api/v1/user/topup")
+def wallet_topup(
+    payload: WalletTopUpRequest,
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    user = get_authenticated_user(current, db)
 
     try:
-        # Run the actual fraud detector before changing balances.
-        result = detector.analyze(transaction_request)
+        amount_ngwee = amount_to_ngwee(payload.amount)
 
-        db_transaction = create_transaction_record(
-            transaction=transaction_request,
-            result=result,
-            transaction_type="Airtel Money Transfer",
-            location="Zambia",
-            device_id="USER-APP"
+        tx_request, result = run_wallet_fraud_check(
+            db=db,
+            sender_phone="SIMULATED-AIRTEL-GATEWAY",
+            receiver_phone=get_user_phone(user),
+            amount_ngwee=amount_ngwee,
+            channel="airtel_simulation",
+            transaction_type="TOPUP",
         )
-
-        db.add(db_transaction)
 
         decision = enum_value(result.decision)
 
-        # REVIEW and BLOCK never move wallet funds.
         if decision != "ALLOW":
-            db.commit()
+            commit_fraud_attempt(
+                db,
+                tx_request,
+                result,
+                "TOPUP",
+            )
 
-            await publish_dashboard_event({
-                "type": "transaction",
-                "transaction_id": transaction_id,
-                "decision": decision,
-                "risk_score": result.risk_score,
-                "time": datetime.utcnow().isoformat()
-            })
+            return wallet_decision_response(result)
 
-            return {
-                "success": False,
-                "transaction_id": transaction_id,
-                "decision": decision,
-                "risk_score": result.risk_score,
-                "message": (
-                    "Transaction held for manual review."
-                    if decision == "REVIEW"
-                    else "Transaction blocked by fraud detection."
-                ),
-                "recommendation": result.recommendation,
-                "balance": round(sender.balance, 2)
-            }
+        new_balance = user.balance_ngwee + amount_ngwee
 
-        # Only ALLOW transactions reach this point.
-        sender.balance -= data.amount
+        user.balance_ngwee = new_balance
+        user.balance = ngwee_to_kwacha(new_balance)
 
-        if receiver:
-            receiver.balance = float(receiver.balance or 0)
-            receiver.balance += data.amount
+        record = create_transaction_record(
+            db,
+            tx_request,
+            result,
+            transaction_type="TOPUP",
+        )
 
-        db.commit()
-        db.refresh(sender)
+        db.add(record)
+
+        add_wallet_ledger(
+            db,
+            user,
+            tx_request.transaction_id,
+            "CREDIT",
+            amount_ngwee,
+            "Simulated Airtel wallet top-up",
+        )
 
         log_activity(
             db,
-            sender.username,
-            "Wallet Transfer",
-            (
-                f"Sent K{data.amount:.2f} to {recipient_phone} "
-                f"| Ref: {transaction_id}"
-            )
+            "WALLET_TOPUP",
+            get_user_phone(user),
+            f"Simulated top-up: K{ngwee_to_kwacha(amount_ngwee):.2f}",
         )
 
-        await publish_dashboard_event({
-            "type": "transaction",
-            "transaction_id": transaction_id,
-            "decision": decision,
-            "risk_score": result.risk_score,
-            "time": datetime.utcnow().isoformat()
+        db.commit()
+        db.refresh(user)
+        db.refresh(record)
+
+        broadcast_dashboard_event({
+            "type": "WALLET_TOPUP",
+            "transaction": serialize_transaction(record),
         })
 
         return {
             "success": True,
-            "message": "Transfer successful.",
-            "transaction_id": transaction_id,
+            "simulated": True,
+            "message": (
+                "Wallet credited in simulation. "
+                "No real Airtel payment was processed."
+            ),
+            "transaction_id": tx_request.transaction_id,
+            "amount": ngwee_to_kwacha(amount_ngwee),
+            "balance": ngwee_to_kwacha(user.balance_ngwee),
             "decision": decision,
-            "risk_score": result.risk_score,
-            "amount": data.amount,
+        }
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except Exception:
+        db.rollback()
+        logger.exception("Wallet top-up failed.")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Wallet top-up failed."
+        )
+
+
+# ============================================================
+# WALLET TRANSFER
+# ============================================================
+
+@app.post("/api/v1/user/airtel-transfer")
+def wallet_transfer(
+    payload: WalletTransferRequest,
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    user = get_authenticated_user(current, db)
+
+    recipient_phone = payload.recipient_phone.strip()
+    sender_phone = get_user_phone(user)
+
+    if recipient_phone == sender_phone:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot send money to yourself."
+        )
+
+    try:
+        amount_ngwee = amount_to_ngwee(payload.amount)
+
+        if user.balance_ngwee < amount_ngwee:
+            raise HTTPException(
+                status_code=400,
+                detail="Insufficient wallet balance."
+            )
+
+        recipient = db.query(User).filter(
+            or_(
+                User.phone == recipient_phone,
+                User.username == recipient_phone,
+            ),
+            User.is_active.is_(True),
+        ).first()
+
+        tx_request, result = run_wallet_fraud_check(
+            db=db,
+            sender_phone=sender_phone,
+            receiver_phone=recipient_phone,
+            amount_ngwee=amount_ngwee,
+            channel="guardian_wallet_simulation",
+            transaction_type="TRANSFER",
+        )
+
+        decision = enum_value(result.decision)
+
+        if decision != "ALLOW":
+            commit_fraud_attempt(
+                db,
+                tx_request,
+                result,
+                "TRANSFER",
+            )
+
+            return wallet_decision_response(result)
+
+        # Conditional debit prevents spending more than the balance.
+        debit_result = db.execute(
+            update(User)
+            .where(
+                User.id == user.id,
+                User.balance_ngwee >= amount_ngwee,
+            )
+            .values(
+                balance_ngwee=User.balance_ngwee - amount_ngwee,
+                balance=(
+                    User.balance_ngwee - amount_ngwee
+                ) / 100.0,
+            )
+            .execution_options(synchronize_session=False)
+        )
+
+        if debit_result.rowcount != 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Insufficient balance or wallet update failed."
+            )
+
+        if recipient:
+            db.execute(
+                update(User)
+                .where(User.id == recipient.id)
+                .values(
+                    balance_ngwee=(
+                        User.balance_ngwee + amount_ngwee
+                    ),
+                    balance=(
+                        User.balance_ngwee + amount_ngwee
+                    ) / 100.0,
+                )
+                .execution_options(synchronize_session=False)
+            )
+
+        db.flush()
+
+        db.refresh(user)
+
+        add_wallet_ledger(
+            db,
+            user,
+            tx_request.transaction_id,
+            "DEBIT",
+            amount_ngwee,
+            payload.note or "Wallet transfer",
+        )
+
+        if recipient:
+            db.refresh(recipient)
+
+            add_wallet_ledger(
+                db,
+                recipient,
+                tx_request.transaction_id,
+                "CREDIT",
+                amount_ngwee,
+                "Received Guardian wallet transfer",
+            )
+
+        record = create_transaction_record(
+            db,
+            tx_request,
+            result,
+            transaction_type=(
+                "GUARDIAN_TRANSFER"
+                if recipient
+                else "SIMULATED_EXTERNAL_TRANSFER"
+            ),
+        )
+
+        db.add(record)
+
+        log_activity(
+            db,
+            "WALLET_TRANSFER",
+            sender_phone,
+            (
+                f"Sent K{ngwee_to_kwacha(amount_ngwee):.2f} "
+                f"to {recipient_phone}."
+            ),
+        )
+
+        db.commit()
+        db.refresh(user)
+        db.refresh(record)
+
+        broadcast_dashboard_event({
+            "type": "WALLET_TRANSFER",
+            "transaction": serialize_transaction(record),
+        })
+
+        return {
+            "success": True,
+            "simulated": True,
+            "transaction_id": tx_request.transaction_id,
+            "amount": ngwee_to_kwacha(amount_ngwee),
             "recipient": recipient_phone,
-            "new_balance": round(sender.balance, 2),
-            "recommendation": result.recommendation
+            "recipient_is_guardian_user": bool(recipient),
+            "balance": ngwee_to_kwacha(user.balance_ngwee),
+            "decision": decision,
+            "message": (
+                "Guardian wallet transfer completed."
+                if recipient
+                else (
+                    "Simulated external payout recorded. "
+                    "No external Airtel transfer occurred."
+                )
+            ),
         }
 
     except HTTPException:
@@ -1973,140 +1789,602 @@ async def airtel_money_transfer(
 
         raise HTTPException(
             status_code=500,
-            detail="Transfer could not be completed."
+            detail="Wallet transfer failed."
         )
 
 
 # ============================================================
-# DEMO WALLET TOP-UP
+# WALLET WITHDRAWAL
 # ============================================================
 
-@app.post("/api/v1/user/topup")
-async def topup_balance(
-    request: Request,
-    data: TopUpRequest,
-    db: Session = Depends(get_db)
+@app.post("/api/v1/user/withdraw")
+def wallet_withdraw(
+    payload: WalletWithdrawRequest,
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
 ):
+    user = get_authenticated_user(current, db)
 
-    current = require_user(request)
-
-    user = db.query(User).filter(
-        User.id == current["id"]
-    ).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found."
-        )
-
-    transaction_id = (
-        f"TOPUP-{datetime.utcnow().strftime('%Y%m%d')}-"
-        f"{uuid.uuid4().hex[:10].upper()}"
-    )
+    phone = payload.recipient_phone.strip()
 
     try:
-        # This is a simulated wallet top-up.
-        # It is NOT proof of a real Airtel Money payment.
-        count_1h, count_24h, amount_24h = calculate_sender_activity(
+        amount_ngwee = amount_to_ngwee(payload.amount)
+
+        if user.balance_ngwee < amount_ngwee:
+            raise HTTPException(
+                status_code=400,
+                detail="Insufficient wallet balance."
+            )
+
+        tx_request, result = run_wallet_fraud_check(
             db,
-            "DEMO-AGENT"
+            get_user_phone(user),
+            phone,
+            amount_ngwee,
+            "simulated_withdrawal",
+            "WITHDRAWAL",
         )
-
-        transaction_request = TransactionRequest(
-            transaction_id=transaction_id,
-            amount=data.amount,
-            currency="ZMW",
-            sender_msisdn="DEMO-AGENT",
-            receiver_msisdn=user.phone,
-            sender_device_id="USER-APP",
-            receiver_is_new=False,
-            channel="demo_wallet_topup",
-            timestamp=datetime.utcnow(),
-            sender_tx_count_last_1h=count_1h,
-            sender_tx_count_last_24h=count_24h,
-            sender_total_amount_last_24h=amount_24h,
-            is_international=False,
-            beneficiary_risk_score=0.0
-        )
-
-        result = detector.analyze(transaction_request)
-
-        db_transaction = create_transaction_record(
-            transaction=transaction_request,
-            result=result,
-            transaction_type="Demo Wallet Top-up",
-            location="Zambia",
-            device_id="USER-APP"
-        )
-
-        db.add(db_transaction)
 
         decision = enum_value(result.decision)
 
         if decision != "ALLOW":
-            db.commit()
+            commit_fraud_attempt(
+                db,
+                tx_request,
+                result,
+                "WITHDRAWAL",
+            )
 
-            await publish_dashboard_event({
-                "type": "transaction",
-                "transaction_id": transaction_id,
-                "decision": decision,
-                "risk_score": result.risk_score,
-                "time": datetime.utcnow().isoformat()
-            })
+            return wallet_decision_response(result)
 
-            return {
-                "success": False,
-                "transaction_id": transaction_id,
-                "decision": decision,
-                "message": "Top-up held by fraud detection.",
-                "recommendation": result.recommendation,
-                "new_balance": float(user.balance or 0)
-            }
+        debit = db.execute(
+            update(User)
+            .where(
+                User.id == user.id,
+                User.balance_ngwee >= amount_ngwee,
+            )
+            .values(
+                balance_ngwee=User.balance_ngwee - amount_ngwee,
+                balance=(
+                    User.balance_ngwee - amount_ngwee
+                ) / 100.0,
+            )
+            .execution_options(synchronize_session=False)
+        )
 
-        user.balance = float(user.balance or 0) + data.amount
+        if debit.rowcount != 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Insufficient balance."
+            )
 
-        db.commit()
+        db.flush()
         db.refresh(user)
+
+        add_wallet_ledger(
+            db,
+            user,
+            tx_request.transaction_id,
+            "DEBIT",
+            amount_ngwee,
+            "Simulated wallet withdrawal",
+        )
+
+        record = create_transaction_record(
+            db,
+            tx_request,
+            result,
+            transaction_type="WITHDRAWAL",
+        )
+
+        db.add(record)
 
         log_activity(
             db,
-            user.username,
-            "Demo Wallet Top-up",
-            (
-                f"Simulated top-up K{data.amount:.2f} "
-                f"| Balance: K{user.balance:.2f}"
-            )
+            "WALLET_WITHDRAWAL",
+            get_user_phone(user),
+            f"Simulated withdrawal to {phone}.",
         )
 
-        await publish_dashboard_event({
-            "type": "transaction",
-            "transaction_id": transaction_id,
-            "decision": decision,
-            "risk_score": result.risk_score,
-            "time": datetime.utcnow().isoformat()
+        db.commit()
+        db.refresh(user)
+        db.refresh(record)
+
+        broadcast_dashboard_event({
+            "type": "WALLET_WITHDRAWAL",
+            "transaction": serialize_transaction(record),
         })
 
         return {
             "success": True,
             "simulated": True,
             "message": (
-                "Demo top-up successful. No real Airtel payment "
-                "was processed or verified."
+                "Simulated withdrawal recorded. "
+                "No external payout was processed."
             ),
-            "transaction_id": transaction_id,
-            "amount": data.amount,
-            "new_balance": round(user.balance, 2)
+            "transaction_id": tx_request.transaction_id,
+            "amount": ngwee_to_kwacha(amount_ngwee),
+            "balance": ngwee_to_kwacha(user.balance_ngwee),
+            "decision": decision,
         }
+
+    except HTTPException:
+        db.rollback()
+        raise
 
     except Exception:
         db.rollback()
-        logger.exception("Wallet top-up failed.")
+        logger.exception("Withdrawal failed.")
 
         raise HTTPException(
             status_code=500,
-            detail="Top-up could not be completed."
+            detail="Withdrawal failed."
         )
+
+
+# ============================================================
+# AIRTIME PURCHASE
+# ============================================================
+
+@app.post("/api/v1/user/buy-airtime")
+def buy_airtime(
+    payload: AirtimePurchaseRequest,
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    user = get_authenticated_user(current, db)
+
+    phone = payload.phone.strip()
+    network = payload.network.strip()
+
+    if not network:
+        raise HTTPException(
+            status_code=400,
+            detail="Network is required."
+        )
+
+    try:
+        amount_ngwee = amount_to_ngwee(payload.amount)
+
+        if user.balance_ngwee < amount_ngwee:
+            raise HTTPException(
+                status_code=400,
+                detail="Insufficient wallet balance."
+            )
+
+        tx_request, result = run_wallet_fraud_check(
+            db,
+            get_user_phone(user),
+            phone,
+            amount_ngwee,
+            "airtime_simulation",
+            "AIRTIME",
+        )
+
+        decision = enum_value(result.decision)
+
+        if decision != "ALLOW":
+            commit_fraud_attempt(
+                db,
+                tx_request,
+                result,
+                "AIRTIME",
+            )
+
+            return wallet_decision_response(result)
+
+        debit = db.execute(
+            update(User)
+            .where(
+                User.id == user.id,
+                User.balance_ngwee >= amount_ngwee,
+            )
+            .values(
+                balance_ngwee=User.balance_ngwee - amount_ngwee,
+                balance=(
+                    User.balance_ngwee - amount_ngwee
+                ) / 100.0,
+            )
+            .execution_options(synchronize_session=False)
+        )
+
+        if debit.rowcount != 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Insufficient balance."
+            )
+
+        db.flush()
+        db.refresh(user)
+
+        add_wallet_ledger(
+            db,
+            user,
+            tx_request.transaction_id,
+            "DEBIT",
+            amount_ngwee,
+            f"Simulated {network} airtime purchase for {phone}",
+        )
+
+        record = create_transaction_record(
+            db,
+            tx_request,
+            result,
+            transaction_type="AIRTIME",
+        )
+
+        db.add(record)
+
+        log_activity(
+            db,
+            "AIRTIME_PURCHASE",
+            get_user_phone(user),
+            f"Simulated {network} airtime purchase for {phone}.",
+        )
+
+        db.commit()
+        db.refresh(user)
+        db.refresh(record)
+
+        broadcast_dashboard_event({
+            "type": "AIRTIME_PURCHASE",
+            "transaction": serialize_transaction(record),
+        })
+
+        return {
+            "success": True,
+            "simulated": True,
+            "message": (
+                "Simulated airtime purchase completed. "
+                "No airtime was delivered by a mobile network."
+            ),
+            "network": network,
+            "phone": phone,
+            "amount": ngwee_to_kwacha(amount_ngwee),
+            "balance": ngwee_to_kwacha(user.balance_ngwee),
+            "transaction_id": tx_request.transaction_id,
+            "decision": decision,
+        }
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except Exception:
+        db.rollback()
+        logger.exception("Airtime purchase failed.")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Airtime purchase failed."
+        )
+
+
+# ============================================================
+# WALLET LEDGER HISTORY
+# ============================================================
+
+@app.get("/api/v1/user/wallet/ledger")
+def wallet_ledger_history(
+    limit: int = 100,
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    user = get_authenticated_user(current, db)
+
+    entries = (
+        db.query(WalletLedger)
+        .filter(WalletLedger.user_id == user.id)
+        .order_by(WalletLedger.created_at.desc())
+        .limit(min(max(limit, 1), 500))
+        .all()
+    )
+
+    return [
+        {
+            "id": item.id,
+            "transaction_id": item.transaction_id,
+            "direction": item.direction,
+            "amount": ngwee_to_kwacha(item.amount_ngwee),
+            "amount_ngwee": item.amount_ngwee,
+            "balance_after": ngwee_to_kwacha(
+                item.balance_after_ngwee
+            ),
+            "description": item.description,
+            "created_at": item.created_at.isoformat()
+            if item.created_at else None,
+        }
+        for item in entries
+    ]
+
+
+# ============================================================
+# CUSTOMER REPORT SUBMISSION
+# ============================================================
+
+@app.post("/api/v1/user/report")
+def submit_report(
+    transaction_id: str = Form(...),
+    reason: str = Form(...),
+    description: Optional[str] = Form(None),
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    user = get_authenticated_user(current, db)
+    phone = get_user_phone(user)
+
+    transaction = db.query(Transaction).filter(
+        Transaction.transaction_id == transaction_id,
+        or_(
+            Transaction.sender_msisdn == phone,
+            Transaction.receiver_msisdn == phone,
+        ),
+    ).first()
+
+    if not transaction:
+        raise HTTPException(
+            status_code=404,
+            detail="Transaction not found in your account."
+        )
+
+    report = Report(
+        user_phone=phone,
+        transaction_id=transaction_id,
+        reason=reason.strip(),
+        description=description,
+        status="PENDING",
+        created_at=utc_now(),
+    )
+
+    db.add(report)
+
+    log_activity(
+        db,
+        "TRANSACTION_REPORTED",
+        phone,
+        f"Transaction {transaction_id} reported."
+    )
+
+    db.commit()
+    db.refresh(report)
+
+    broadcast_dashboard_event({
+        "type": "NEW_REPORT",
+        "report_id": report.id,
+        "transaction_id": transaction_id,
+    })
+
+    return {
+        "success": True,
+        "message": "Your report has been submitted.",
+        "report_id": report.id,
+    }
+
+
+# ============================================================
+# CUSTOMER NOTIFICATIONS
+# ============================================================
+
+@app.get("/api/v1/user/notifications")
+def user_notifications(
+    limit: int = 50,
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    user = get_authenticated_user(current, db)
+    phone = get_user_phone(user)
+
+    notifications = (
+        db.query(ActivityLog)
+        .filter(ActivityLog.user_phone == phone)
+        .order_by(ActivityLog.created_at.desc())
+        .limit(min(max(limit, 1), 200))
+        .all()
+    )
+
+    return [
+        {
+            "id": item.id,
+            "action": item.action,
+            "details": item.details,
+            "time": item.created_at.isoformat()
+            if item.created_at else None,
+        }
+        for item in notifications
+    ]
+
+
+# ============================================================
+# AI NYASHA
+# ============================================================
+
+class AIChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=4000)
+
+
+def ask_ai_nyasha(message: str) -> str:
+    """
+    Uses the OpenAI Responses API when an API key is configured.
+
+    Without an API key, returns a transparent configuration message.
+    """
+
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    if not api_key:
+        return (
+            "I'm AI NYASHA. My AI service has not been connected yet. "
+            "Please configure OPENAI_API_KEY on the server to enable "
+            "general AI-powered answers."
+        )
+
+    import urllib.request
+    import urllib.error
+
+    model = os.getenv(
+        "OPENAI_MODEL",
+        "gpt-6"
+    )
+
+    payload = {
+        "model": model,
+        "instructions": (
+            "You are AI NYASHA, the helpful assistant inside THE-GUARDIAN. "
+            "Answer general questions clearly and accurately. "
+            "Do not claim to have performed payments or account actions. "
+            "Never request passwords, PINs, or OTP codes."
+        ),
+        "input": message,
+    }
+
+    request_data = json.dumps(payload).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.openai.com/v1/responses",
+        data=request_data,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            data = json.loads(
+                response.read().decode("utf-8")
+            )
+
+        output_text = []
+
+        for item in data.get("output", []):
+            for content in item.get("content", []):
+                if content.get("type") == "output_text":
+                    output_text.append(content.get("text", ""))
+
+        answer = "\n".join(output_text).strip()
+
+        return answer or "I couldn't generate an answer. Please try again."
+
+    except Exception:
+        logger.exception("AI NYASHA request failed.")
+
+        return (
+            "AI NYASHA is temporarily unavailable. "
+            "Please try again shortly."
+        )
+
+
+@app.post("/api/v1/user/ai-chat")
+async def ai_chat(
+    payload: AIChatRequest,
+    current=Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    user = get_authenticated_user(current, db)
+
+    answer = await asyncio.to_thread(
+        ask_ai_nyasha,
+        payload.message.strip()
+    )
+
+    log_activity(
+        db,
+        "AI_NYASHA_CHAT",
+        get_user_phone(user),
+        "Customer used AI NYASHA."
+    )
+
+    db.commit()
+
+    return {
+        "success": True,
+        "assistant": AI_NAME,
+        "reply": answer,
+        "message": answer,
+    }
+
+
+# ============================================================
+# ADMIN WALLET OVERVIEW
+# ============================================================
+
+@app.get("/api/v1/admin/wallets")
+def admin_wallets(
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    users = db.query(User).order_by(User.id.desc()).all()
+
+    return [
+        {
+            "user_id": user.id,
+            "full_name": user.full_name,
+            "phone": get_user_phone(user),
+            "balance": ngwee_to_kwacha(user.balance_ngwee),
+            "balance_ngwee": user.balance_ngwee,
+            "is_active": user.is_active,
+        }
+        for user in users
+    ]
+
+
+@app.get("/api/v1/admin/wallet-ledger")
+def admin_wallet_ledger(
+    limit: int = 200,
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    entries = (
+        db.query(WalletLedger)
+        .order_by(WalletLedger.created_at.desc())
+        .limit(min(max(limit, 1), 1000))
+        .all()
+    )
+
+    return [
+        {
+            "id": item.id,
+            "user_id": item.user_id,
+            "transaction_id": item.transaction_id,
+            "direction": item.direction,
+            "amount": ngwee_to_kwacha(item.amount_ngwee),
+            "balance_after": ngwee_to_kwacha(
+                item.balance_after_ngwee
+            ),
+            "description": item.description,
+            "created_at": item.created_at.isoformat()
+            if item.created_at else None,
+        }
+        for item in entries
+    ]
+
+
+# ============================================================
+# SYSTEM INFORMATION
+# ============================================================
+
+@app.get("/api/v1/system/status")
+def system_status(
+    admin=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return {
+        "application": APP_NAME,
+        "status": "ONLINE",
+        "database": "CONNECTED",
+        "fraud_detector": "ACTIVE",
+        "wallet_mode": "SIMULATION",
+        "airtel_live_api": "NOT_CONFIGURED",
+        "ai_nyasha": (
+            "CONNECTED"
+            if os.getenv("OPENAI_API_KEY")
+            else "NOT_CONFIGURED"
+        ),
+        "users": db.query(User).count(),
+        "transactions": db.query(Transaction).count(),
+        "time": utc_now().isoformat(),
+    }
 
 
 # ============================================================
@@ -2115,10 +2393,12 @@ async def topup_balance(
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("THE GUARDIAN backend started.")
-    logger.info("Database: %s", engine.dialect.name)
+    logger.info("%s starting.", APP_NAME)
+    logger.info("Fraud detection engine loaded.")
+    logger.info("Wallet simulation routes loaded.")
+    logger.info("AI assistant name: %s", AI_NAME)
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    logger.info("THE GUARDIAN backend shutting down.")
+    logger.info("%s shutting down.", APP_NAME)
