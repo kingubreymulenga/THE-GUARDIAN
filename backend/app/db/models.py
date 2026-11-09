@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 from sqlalchemy import (
@@ -10,6 +11,7 @@ from sqlalchemy import (
     String,
     Text,
     Index,
+    UniqueConstraint,
 )
 
 from backend.app.db.database import Base
@@ -49,9 +51,17 @@ class User(Base):
         nullable=True
     )
 
+    # Legacy balance field retained for existing dashboard compatibility.
     balance = Column(
         Float,
         default=0.0,
+        nullable=False
+    )
+
+    # Primary wallet balance in ngwee (100 ngwee = K1).
+    balance_ngwee = Column(
+        Integer,
+        default=0,
         nullable=False
     )
 
@@ -165,6 +175,65 @@ Index(
     "ix_transactions_sender_created",
     Transaction.sender_msisdn,
     Transaction.created_at
+)
+
+
+class WalletLedger(Base):
+    """
+    Permanent record of wallet credits and debits.
+
+    Transfers between Guardian users should create two ledger
+    entries sharing the same transaction_id.
+    """
+
+    __tablename__ = "wallet_ledger"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    transaction_id = Column(
+        String(100),
+        index=True,
+        nullable=False
+    )
+
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        index=True,
+        nullable=False
+    )
+
+    direction = Column(
+        String(10),
+        nullable=False
+    )  # CREDIT or DEBIT
+
+    amount_ngwee = Column(
+        Integer,
+        nullable=False
+    )
+
+    balance_after_ngwee = Column(
+        Integer,
+        nullable=False
+    )
+
+    description = Column(
+        String(255),
+        nullable=False
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+
+Index(
+    "ix_wallet_ledger_user_created",
+    WalletLedger.user_id,
+    WalletLedger.created_at
 )
 
 
